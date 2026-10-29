@@ -1,0 +1,17 @@
+Sneha Kulkarni
+Data Analyst | sneha.k@example.com | Pune
+
+EXPERIENCE
+Data Analyst, Infosys (2021–present)
+- Built Power BI dashboards tracking SLA adherence across 12 client accounts
+- Wrote 300+ SQL queries; automated weekly reporting, saving 10 hrs/week
+- Python (pandas) for ad-hoc churn analysis; presented findings to client VPs
+
+MIS Executive, Wipro (2019–2021)
+- Excel reporting, data validation for payroll inputs
+
+SKILLS
+SQL, Power BI, Excel, Python, pandas, stakeholder reporting
+
+EDUCATION
+B.Sc Statistics, Pune University (2019)

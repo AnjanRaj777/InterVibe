@@ -1,0 +1,12 @@
+{
+  "candidate": {
+    "name": "Arjun Mehta",
+    "skillsSubset": ["MEDDIC", "Salesforce CRM"],
+    "metricsSubset": ["128%", "$1.8M"]
+  },
+  "jd": {
+    "titleContains": "Account Executive",
+    "mustHavesSubset": ["MEDDIC", "quota"],
+    "keywordsSubset": ["pipeline", "ARR"]
+  }
+}

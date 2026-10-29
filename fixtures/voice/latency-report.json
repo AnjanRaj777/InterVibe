@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-10-29T15:16:40.818Z",
+  "sampleCount": 20,
+  "targets": {
+    "firstAudioMaxMs": 2500,
+    "bargeInMaxMs": 300
+  },
+  "results": {
+    "firstChunkLatenciesMs": [
+      186,
+      74,
+      33,
+      46,
+      38,
+      26,
+      32,
+      30,
+      34,
+      27,
+      75,
+      76,
+      56,
+      131,
+      49,
+      26,
+      55,
+      29,
+      42,
+      37
+    ],
+    "firstAudioP50Ms": 40,
+    "firstAudioP95Ms": 134,
+    "bargeInLatenciesMs": [
+      5,
+      12,
+      1,
+      1,
+      2,
+      2,
+      2,
+      1,
+      4,
+      5,
+      7,
+      1,
+      3,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      2
+    ],
+    "bargeInP50Ms": 2,
+    "bargeInP95Ms": 7
+  },
+  "gatePassed": true
+}

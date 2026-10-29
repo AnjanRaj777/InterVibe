@@ -1,0 +1,14 @@
+Senior Backend Engineer — Payments Platform (Acme Fintech, Senior level)
+
+You will own high-throughput Java services behind our payments ledger.
+Must-haves:
+- 5+ years Java + Spring Boot in production
+- Postgres at scale (partitioning, replication, zero-downtime migrations)
+- Event streaming with Kafka or Flink
+- System design for 99.99% availability targets
+- Mentoring engineers and running design reviews
+
+Nice to have: AWS, Redis, fintech or payments domain experience.
+
+Responsibilities: own ledger services end to end, drive checkout reliability roadmap, mentor 3–4 engineers.
+Keywords: Java, Spring Boot, Postgres, Kafka, Flink, ledger, p99, 99.99%.

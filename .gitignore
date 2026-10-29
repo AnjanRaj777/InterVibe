@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.npm-cache/
+
+# Build outputs
+.next/
+dist/
+coverage/
+
+# Temporary / cache files
+.tmp/
+.DS_Store
+Thumbs.db
+
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Markdown files (ignore all except README)
+*.md
+!README.md
+!readme.md

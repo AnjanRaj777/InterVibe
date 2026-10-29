@@ -1,0 +1,12 @@
+{
+  "candidate": {
+    "name": "Rahul Verma",
+    "skillsSubset": ["A/B testing", "SQL", "Amplitude"],
+    "metricsSubset": ["18%", "200k"]
+  },
+  "jd": {
+    "titleContains": "Product Manager",
+    "mustHavesSubset": ["A/B testing", "SQL", "fintech"],
+    "keywordsSubset": ["activation", "funnel"]
+  }
+}

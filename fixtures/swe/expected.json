@@ -1,0 +1,12 @@
+{
+  "candidate": {
+    "name": "Priya Nair",
+    "skillsSubset": ["Java", "Spring Boot", "Postgres", "Kafka", "Flink"],
+    "metricsSubset": ["40k rps", "62%"]
+  },
+  "jd": {
+    "titleContains": "Backend Engineer",
+    "mustHavesSubset": ["Java", "Postgres", "Kafka"],
+    "keywordsSubset": ["ledger", "p99"]
+  }
+}

@@ -1,0 +1,64 @@
+[
+  {
+    "id": "clip-01-swe-intro.wav",
+    "duration": 3.5,
+    "freq": 300,
+    "text": "Hello, I have five years of backend engineering experience at scale."
+  },
+  {
+    "id": "clip-02-fast-speech.wav",
+    "duration": 1.8,
+    "freq": 450,
+    "text": "We scaled our API to fifty thousand requests per second using Redis caching."
+  },
+  {
+    "id": "clip-03-slow-speech.wav",
+    "duration": 4.5,
+    "freq": 220,
+    "text": "I carefully evaluated the database trade-offs between consistency and availability."
+  },
+  {
+    "id": "clip-04-long-pause.wav",
+    "duration": 4,
+    "freq": 350,
+    "pause": true,
+    "text": "The main issue was garbage collection pauses... which caused latency spikes."
+  },
+  {
+    "id": "clip-05-background-noise.wav",
+    "duration": 3,
+    "freq": 320,
+    "noise": true,
+    "text": "We deployed our microservices onto Kubernetes with Envoy service mesh."
+  },
+  {
+    "id": "clip-06-british-accent.wav",
+    "duration": 3.2,
+    "freq": 280,
+    "text": "We restructured the microservices to reduce round-trip serialization overhead."
+  },
+  {
+    "id": "clip-07-indian-accent.wav",
+    "duration": 3,
+    "freq": 340,
+    "text": "We partitioned the PostgreSQL ledger table by month to optimize query execution."
+  },
+  {
+    "id": "clip-08-short-answer.wav",
+    "duration": 1.2,
+    "freq": 400,
+    "text": "Zero downtime."
+  },
+  {
+    "id": "clip-09-interruption.wav",
+    "duration": 1.5,
+    "freq": 500,
+    "text": "Excuse me, could you clarify that question?"
+  },
+  {
+    "id": "clip-10-jd-acronyms.wav",
+    "duration": 3.8,
+    "freq": 310,
+    "text": "Our tech stack used Kafka, Raft, gRPC, PostgreSQL, and AWS S3 with strict ACID compliance."
+  }
+]
