@@ -15,6 +15,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run build --workspace=@intervibe/contracts
       - run: npm run lint --if-present
       - run: npm run typecheck --if-present
       - run: npm run test --if-present
