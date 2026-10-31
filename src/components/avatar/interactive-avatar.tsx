@@ -95,11 +95,11 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 440;
 
-    // Scene & Camera (Zoomed-out portrait framing)
+    // Scene & Camera (Golden-ratio portrait framing matching executive headshot)
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
-    camera.position.set(0, 1.52, 1.12);
-    camera.lookAt(0, 1.48, 0);
+    camera.position.set(0, 1.65, 1.22);
+    camera.lookAt(0, 1.60, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -177,20 +177,18 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           }
         });
 
-        // 1. Lower arms from T-pose to natural resting posture
+        // 1. Lower arms from T-pose to natural resting posture along torso
         if (leftArm) {
-          leftArm.rotation.z = -1.28;
-          leftArm.rotation.x = 0.12;
+          leftArm.rotation.set(1.35, 0, -0.05);
         }
         if (rightArm) {
-          rightArm.rotation.z = 1.28;
-          rightArm.rotation.x = 0.12;
+          rightArm.rotation.set(1.35, 0, 0.05);
         }
         if (leftForeArm) {
-          leftForeArm.rotation.z = -0.15;
+          leftForeArm.rotation.set(0.1, 0, 0);
         }
         if (rightForeArm) {
-          rightForeArm.rotation.z = 0.15;
+          rightForeArm.rotation.set(0.1, 0, 0);
         }
 
         // 2. Reset any erroneous default model weights (e.g., tongueOut)
@@ -223,6 +221,18 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     };
 
     window.addEventListener('mousemove', handleMouseMove);
+
+    const handleResize = () => {
+      if (!container || !renderer || !camera) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w && h) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    };
+    window.addEventListener('resize', handleResize);
 
     // Animation Smoothing States
     let clock = new THREE.Clock();
@@ -340,6 +350,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       isDisposed = true;
       cancelAnimationFrame(frameId);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', handleResize);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
