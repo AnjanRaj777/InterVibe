@@ -8,7 +8,16 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard/interview';
+  
+  // SEC-10 Fix: Prevent open redirect by strictly validating relative URL
+  const rawNext = searchParams.get('next') ?? '/dashboard/interview';
+  const isSafeRelativePath = 
+    typeof rawNext === 'string' &&
+    rawNext.startsWith('/') &&
+    !rawNext.startsWith('//') &&
+    !rawNext.startsWith('/\\') &&
+    !rawNext.includes(':');
+  const next = isSafeRelativePath ? rawNext : '/dashboard/interview';
 
   if (code) {
     const supabase = await createClient();
@@ -37,20 +46,16 @@ export async function GET(request: Request) {
         console.warn('[OAuth Callback] Notice updating profile from OAuth:', profileErr);
       }
 
-      const forwardedHost = request.headers.get('x-forwarded-host');
-      const isLocalEnv = process.env.NODE_ENV === 'development';
-      
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
+      // SEC-11 Fix: Prevent host header poisoning by preferring APP_URL or verified origin
+      const configuredBase = process.env.APP_URL
+        ? (process.env.APP_URL.startsWith('http') ? process.env.APP_URL : `https://${process.env.APP_URL}`)
+        : origin;
+
+      return NextResponse.redirect(new URL(next, configuredBase).toString());
     }
     console.error('[OAuth Callback] Exchange error:', error.message);
   }
 
   // Return the user to login with an error flag if exchange fails
-  return NextResponse.redirect(`${origin}/auth/login?error=oauth_exchange_failed`);
+  return NextResponse.redirect(new URL('/auth/login?error=oauth_exchange_failed', origin).toString());
 }
