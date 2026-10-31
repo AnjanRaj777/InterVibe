@@ -3,6 +3,7 @@ import type { InterviewSession } from '@/store/session-store';
 
 /**
  * Saves a completed interview session and its message dialogue to Supabase.
+ * SEC-07: Validates caller session to prevent IDOR / spoofed userId writes.
  */
 export async function saveSessionToSupabase(session: InterviewSession, userId: string): Promise<string | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -11,11 +12,17 @@ export async function saveSessionToSupabase(session: InterviewSession, userId: s
   }
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== userId) {
+      console.warn('[Supabase Service] Session ownership mismatch: cannot persist session for another user');
+      return null;
+    }
+
     // 1. Insert Interview Session Row
     const { data: sessionRow, error: sessionError } = await supabase
       .from('interview_sessions')
       .insert({
-        user_id: userId,
+        user_id: user.id,
         job_role: session.jobRole,
         interviewer_voice: session.interviewerVoice,
         duration_seconds: session.durationSeconds,
@@ -63,6 +70,7 @@ export async function saveSessionToSupabase(session: InterviewSession, userId: s
 
 /**
  * Fetches all past interview sessions for the current user from Supabase.
+ * SEC-07: Verifies current session matches requested userId.
  */
 export async function fetchUserSessionsFromSupabase(userId: string): Promise<InterviewSession[]> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -70,10 +78,16 @@ export async function fetchUserSessionsFromSupabase(userId: string): Promise<Int
   }
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== userId) {
+      console.warn('[Supabase Service] Session ownership mismatch: unauthorized fetch attempt');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('interview_sessions')
       .select('*, session_messages(*)')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error || !data) {
@@ -111,6 +125,7 @@ export async function fetchUserSessionsFromSupabase(userId: string): Promise<Int
 
 /**
  * Uploads an interview audio recording to Supabase Storage bucket.
+ * SEC-07: Validates caller identity before uploading to user folder.
  */
 export async function uploadInterviewAudioToSupabase(
   audioBlob: Blob,
@@ -122,7 +137,13 @@ export async function uploadInterviewAudioToSupabase(
   }
 
   try {
-    const fileName = `${userId}/${sessionId}.wav`;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== userId) {
+      console.warn('[Supabase Storage] Unauthorized audio upload attempt');
+      return null;
+    }
+
+    const fileName = `${user.id}/${sessionId}.wav`;
     const { data, error } = await supabase.storage
       .from('intervibe-docs')
       .upload(fileName, audioBlob, {
