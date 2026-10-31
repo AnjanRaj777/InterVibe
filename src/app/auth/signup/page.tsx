@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth-store';
+import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +15,9 @@ import {
   Eye, 
   EyeOff, 
   Sparkles, 
-  CheckCircle2, 
   ChevronLeft,
   Award,
-  Zap,
-  Code2
+  Zap
 } from 'lucide-react';
 
 const TARGET_ROLES = [
@@ -31,13 +30,13 @@ const TARGET_ROLES = [
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { signup, login } = useAuthStore();
+  const { signup } = useAuthStore();
   
-  const [fullName, setFullName] = useState('Alex Rivera');
-  const [email, setEmail] = useState('alex@intervibe.ai');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [targetRole, setTargetRole] = useState('Senior Full Stack Developer');
   const [seniority, setSeniority] = useState('Senior / Staff (5-8+ yrs)');
-  const [password, setPassword] = useState('Password123!');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -57,8 +56,16 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !fullName) {
-      toast.error('Please fill in your name and email');
+    if (!fullName.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    if (!email.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    if (!password || password.length < 8) {
+      toast.error('Password must be at least 8 characters');
       return;
     }
     if (!agreeTerms) {
@@ -68,13 +75,13 @@ export default function SignUpPage() {
 
     setLoading(true);
     try {
-      await signup(fullName, email, targetRole, seniority);
+      await signup(fullName, email, password, targetRole, seniority);
       toast.success('Account created successfully!', {
-        description: `Welcome aboard, ${fullName}! Your free mock credits are ready.`,
+        description: `Welcome aboard, ${fullName}! Please check your email if confirmation is required.`,
       });
       router.push('/dashboard/interview');
-    } catch {
-      toast.error('Failed to create account. Please try again.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -83,13 +90,16 @@ export default function SignUpPage() {
   const handleOAuthSignUp = async (provider: 'github' | 'google') => {
     setOauthLoading(provider);
     try {
-      const demoEmail = provider === 'github' ? 'alex.rivera@github.dev' : 'alex.rivera@gmail.com';
-      await signup('Alex Rivera', demoEmail, targetRole, seniority);
-      toast.success(`Registered with ${provider === 'github' ? 'GitHub' : 'Google'}!`);
-      router.push('/dashboard/interview');
-    } catch {
-      toast.error(`Failed to register with ${provider}`);
-    } finally {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/interview`,
+        },
+      });
+      if (error) throw error;
+      // Browser automatically redirects to provider OAuth page
+    } catch (err: any) {
+      toast.error(`Failed to register with ${provider}: ${err.message || ''}`);
       setOauthLoading(null);
     }
   };
@@ -156,7 +166,7 @@ export default function SignUpPage() {
                 <svg className="size-4 fill-current" viewBox="0 0 24 24">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                 </svg>
-                <span>{oauthLoading === 'github' ? 'Creating...' : 'Sign up with GitHub'}</span>
+                <span>{oauthLoading === 'github' ? 'Redirecting to GitHub...' : 'Sign up with GitHub'}</span>
               </button>
 
               <button
@@ -171,7 +181,7 @@ export default function SignUpPage() {
                   <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
                 </svg>
-                <span>{oauthLoading === 'google' ? 'Creating...' : 'Sign up with Google'}</span>
+                <span>{oauthLoading === 'google' ? 'Redirecting to Google...' : 'Sign up with Google'}</span>
               </button>
             </div>
 
@@ -194,7 +204,7 @@ export default function SignUpPage() {
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder="Alex Rivera"
+                    placeholder="e.g. Alex Rivera"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="bg-black/40 border-white/15 focus:border-emerald-500 text-white text-sm h-11 rounded-xl font-mono"
@@ -209,7 +219,7 @@ export default function SignUpPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="alex@company.com"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-black/40 border-white/15 focus:border-emerald-500 text-white text-sm h-11 rounded-xl font-mono"
@@ -274,6 +284,7 @@ export default function SignUpPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter a secure password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-black/40 border-white/15 focus:border-emerald-500 text-white text-sm h-11 rounded-xl pr-10 font-mono"
@@ -303,7 +314,7 @@ export default function SignUpPage() {
                     />
                   ))}
                   <span className="text-[10px] font-mono text-neutral-400 ml-1">
-                    {strength <= 1 ? 'Weak' : strength <= 3 ? 'Good' : 'Strong'}
+                    {strength === 0 ? 'Empty' : strength <= 1 ? 'Weak' : strength <= 3 ? 'Good' : 'Strong'}
                   </span>
                 </div>
               </div>
