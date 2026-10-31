@@ -92,44 +92,48 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     if (!container) return;
 
     let isDisposed = false;
-    const width = container.clientWidth || 380;
-    const height = container.clientHeight || 420;
+    const width = container.clientWidth || 400;
+    const height = container.clientHeight || 440;
 
-    // Scene & Camera
+    // Scene & Camera (Cinematic 85mm equivalent portrait framing)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
-    // Position camera framed at upper chest, neck, and head
-    camera.position.set(0, 1.65, 0.78);
-    camera.lookAt(0, 1.62, 0);
+    const camera = new THREE.PerspectiveCamera(26, width / height, 0.1, 100);
+    camera.position.set(0, 1.58, 0.44);
+    camera.lookAt(0, 1.575, 0);
 
-    // High-performance WebGL Renderer
+    // High-performance WebGL Renderer with ACES Tone Mapping
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.05;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // Photorealistic Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+    // Natural Soft Studio Lighting (diffused warm key, soft fill, subtle rim)
+    const ambientLight = new THREE.AmbientLight(0xfff5ea, 1.3);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff8f0, 2.6);
-    keyLight.position.set(1.5, 2.8, 2.2);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    keyLight.position.set(1.2, 2.5, 1.8);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xe0f2fe, 1.5);
-    fillLight.position.set(-1.8, 1.6, 1.8);
+    const fillLight = new THREE.DirectionalLight(0xe2e8f0, 1.1);
+    fillLight.position.set(-1.4, 1.8, 1.4);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.8);
-    rimLight.position.set(0, 2.8, -1.8);
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.6);
+    rimLight.position.set(0, 2.2, -1.5);
     scene.add(rimLight);
 
-    // References for animations
+    // Rig references for animations
     let headBone: THREE.Object3D | null = null;
     let neckBone: THREE.Object3D | null = null;
+    let spineBone: THREE.Object3D | null = null;
+    let leftArm: THREE.Object3D | null = null;
+    let rightArm: THREE.Object3D | null = null;
+    let leftForeArm: THREE.Object3D | null = null;
+    let rightForeArm: THREE.Object3D | null = null;
     const morphMeshes: THREE.Mesh[] = [];
 
     // Helper to safely set morph target weight
@@ -157,6 +161,11 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           if ((child as any).isBone) {
             if (child.name === 'Head') headBone = child;
             if (child.name === 'Neck') neckBone = child;
+            if (child.name === 'Spine2') spineBone = child;
+            if (child.name === 'LeftArm') leftArm = child;
+            if (child.name === 'RightArm') rightArm = child;
+            if (child.name === 'LeftForeArm') leftForeArm = child;
+            if (child.name === 'RightForeArm') rightForeArm = child;
           }
           if ((child as any).isMesh) {
             const mesh = child as THREE.Mesh;
@@ -168,10 +177,29 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           }
         });
 
-        // Set friendly baseline expression (slight welcoming smile)
-        setMorph('mouthSmile', 0.2);
-        setMorph('mouthSmileLeft', 0.2);
-        setMorph('mouthSmileRight', 0.2);
+        // 1. Lower arms from T-pose to natural resting posture
+        if (leftArm) {
+          leftArm.rotation.z = -1.28;
+          leftArm.rotation.x = 0.12;
+        }
+        if (rightArm) {
+          rightArm.rotation.z = 1.28;
+          rightArm.rotation.x = 0.12;
+        }
+        if (leftForeArm) {
+          leftForeArm.rotation.z = -0.15;
+        }
+        if (rightForeArm) {
+          rightForeArm.rotation.z = 0.15;
+        }
+
+        // 2. Reset any erroneous default model weights (e.g., tongueOut)
+        setMorph('tongueOut', 0);
+        setMorph('mouthOpen', 0);
+        setMorph('jawOpen', 0);
+        setMorph('mouthSmile', 0.18);
+        setMorph('mouthSmileLeft', 0.18);
+        setMorph('mouthSmileRight', 0.18);
 
         scene.add(model);
         setModelLoading(false);
@@ -183,79 +211,117 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       }
     );
 
-    // Interactive Mouse Tracking
+    // Interactive Mouse Look-At Tracking
     let targetYaw = 0;
     let targetPitch = 0;
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetYaw = THREE.MathUtils.clamp(x * 0.28, -0.28, 0.28);
-      targetPitch = THREE.MathUtils.clamp(y * 0.18, -0.18, 0.18);
+      targetYaw = THREE.MathUtils.clamp(x * 0.18, -0.18, 0.18);
+      targetPitch = THREE.MathUtils.clamp(y * 0.12, -0.12, 0.12);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Animation Loop
+    // Animation Smoothing States
     let clock = new THREE.Clock();
     let blinkTimer = 0;
     let blinkProgress = 0;
     let isBlinking = false;
     let frameId: number;
 
+    let currentJaw = 0;
+    let currentVisemeAA = 0;
+    let currentVisemeO = 0;
+    let currentVisemeE = 0;
+
     const animate = () => {
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // 1. Natural Head Tracking
-      if (headBone) {
-        headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, targetYaw, 0.08);
-        headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, -targetPitch, 0.08);
+      // Ensure tongue remains naturally inside mouth at all times
+      setMorph('tongueOut', 0);
+
+      // 1. Subtle natural breathing & posture
+      if (spineBone) {
+        spineBone.rotation.x = Math.sin(time * 1.5) * 0.012;
       }
 
-      // 2. Speaking State (Real-Time Lip-Sync & Visemes to Deepgram Aura audio)
+      // 2. Smooth Head Tracking & Conversational Sway
+      if (headBone) {
+        const swayY = Math.sin(time * 1.2) * 0.015;
+        const swayX = Math.cos(time * 1.8) * 0.01;
+        headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, targetYaw + swayY, 0.08);
+        headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, -targetPitch + swayX, 0.08);
+      }
+
+      // 3. Realistic Conversational Speech Lip-Sync (Deepgram Aura Sync)
       const isSpeaking = activeState === 'speaking' || audioPlaying;
       if (isSpeaking) {
-        const mouthOpen = Math.abs(Math.sin(time * 16)) * 0.65 + (Math.sin(time * 7) > 0 ? 0.2 : 0);
-        const mouthWide = Math.abs(Math.sin(time * 10)) * 0.35;
+        // Natural human syllable cadence (~4-5 syllables/sec, subtle 0.08 - 0.28 range)
+        const syllable1 = Math.sin(time * 9.0);
+        const syllable2 = Math.cos(time * 4.5);
+        const rawMouth = Math.max(0, syllable1 * 0.7 + syllable2 * 0.3);
 
-        setMorph('jawOpen', mouthOpen);
-        setMorph('mouthOpen', mouthOpen * 0.8);
-        setMorph('viseme_aa', mouthOpen);
-        setMorph('viseme_O', mouthOpen * 0.6);
-        setMorph('viseme_E', mouthWide);
-        setMorph('mouthSmile', 0.25);
+        const targetJaw = rawMouth * 0.26;
+        const targetAA = rawMouth * 0.22;
+        const targetO = Math.max(0, Math.sin(time * 5.2)) * 0.16;
+        const targetE = Math.max(0, Math.cos(time * 6.4)) * 0.18;
+
+        currentJaw = THREE.MathUtils.lerp(currentJaw, targetJaw, 0.28);
+        currentVisemeAA = THREE.MathUtils.lerp(currentVisemeAA, targetAA, 0.28);
+        currentVisemeO = THREE.MathUtils.lerp(currentVisemeO, targetO, 0.28);
+        currentVisemeE = THREE.MathUtils.lerp(currentVisemeE, targetE, 0.28);
+
+        setMorph('jawOpen', currentJaw);
+        setMorph('mouthOpen', currentJaw * 0.5);
+        setMorph('viseme_aa', currentVisemeAA);
+        setMorph('viseme_O', currentVisemeO);
+        setMorph('viseme_E', currentVisemeE);
+        setMorph('mouthSmile', 0.22);
       } else {
-        // Return smoothly to closed mouth with neutral/welcoming expression
-        setMorph('jawOpen', THREE.MathUtils.lerp(0, 0, 0.2));
-        setMorph('mouthOpen', 0);
-        setMorph('viseme_aa', 0);
-        setMorph('viseme_O', 0);
-        setMorph('viseme_E', 0);
+        // Smooth transition to relaxed, closed mouth with polite recruiter smile
+        currentJaw = THREE.MathUtils.lerp(currentJaw, 0, 0.22);
+        currentVisemeAA = THREE.MathUtils.lerp(currentVisemeAA, 0, 0.22);
+        currentVisemeO = THREE.MathUtils.lerp(currentVisemeO, 0, 0.22);
+        currentVisemeE = THREE.MathUtils.lerp(currentVisemeE, 0, 0.22);
+
+        setMorph('jawOpen', currentJaw);
+        setMorph('mouthOpen', currentJaw);
+        setMorph('viseme_aa', currentVisemeAA);
+        setMorph('viseme_O', currentVisemeO);
+        setMorph('viseme_E', currentVisemeE);
         setMorph('mouthSmile', 0.18);
+        setMorph('mouthSmileLeft', 0.18);
+        setMorph('mouthSmileRight', 0.18);
       }
 
-      // 3. Attentive Listening Nod when candidate speaks (Spacebar held)
+      // 4. Attentive Listening Nod when candidate speaks (Spacebar held)
       if (activeState === 'listening' && isRecording) {
         if (headBone) {
-          headBone.rotation.x += Math.sin(time * 3.8) * 0.025; // Gentle nodding
+          headBone.rotation.x += Math.sin(time * 3.4) * 0.022; // Gentle attentive nod
+          headBone.rotation.z = 0.035; // Slight interested head tilt
         }
-        setMorph('browInnerUp', 0.25);
+        setMorph('browInnerUp', 0.18);
       } else {
+        if (headBone) {
+          headBone.rotation.z = THREE.MathUtils.lerp(headBone.rotation.z, 0, 0.1);
+        }
         setMorph('browInnerUp', 0);
       }
 
-      // 4. Natural Eye Blinking Simulation (every ~3.4 seconds)
+      // 5. Natural Eye Blinking Simulation (every ~3.5 seconds)
       blinkTimer += delta;
-      if (blinkTimer > 3.4 && !isBlinking) {
+      if (blinkTimer > 3.5 && !isBlinking) {
         isBlinking = true;
         blinkProgress = 0;
       }
       if (isBlinking) {
-        blinkProgress += delta * 14;
-        const blinkValue = Math.sin(blinkProgress);
-        setMorph('eyeBlinkLeft', Math.max(0, blinkValue));
-        setMorph('eyeBlinkRight', Math.max(0, blinkValue));
+        blinkProgress += delta * 15;
+        const blinkVal = Math.sin(blinkProgress);
+        setMorph('eyeBlinkLeft', Math.max(0, blinkVal));
+        setMorph('eyeBlinkRight', Math.max(0, blinkVal));
         if (blinkProgress >= Math.PI) {
           isBlinking = false;
           blinkTimer = 0;
@@ -317,7 +383,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
 
       {/* 3D HUMAN AVATAR VIEWPORT */}
       {avatarMode === '3d' ? (
-        <div className="relative w-[340px] h-[360px] md:w-[420px] md:h-[420px] flex items-center justify-center">
+        <div className="relative w-[340px] h-[370px] md:w-[440px] md:h-[430px] flex items-center justify-center">
           {perxonaLoaded && perxonaConfig?.enabled ? (
             /* Live XRSPACE Perxona <sv-presenter> Web Component */
             <div className="relative w-full h-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#181818]/60 to-[#0e0e0e]/80 border border-[#2b2b2b] shadow-2xl flex items-center justify-center">
@@ -336,7 +402,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           ) : (
             /* Photorealistic 3D Human Character Engine (WebGL + Blendshapes) */
             <div className="relative w-full h-full flex flex-col items-center justify-center">
-              {/* Loading spinner while GLB streams */}
+              {/* Loading indicator while GLB loads */}
               {modelLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#121212]/80 backdrop-blur-sm rounded-2xl z-20">
                   <Loader2 className="w-7 h-7 text-cyan-400 animate-spin" />
@@ -347,7 +413,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
               {/* WebGL Canvas Viewport */}
               <div
                 ref={containerRef}
-                className="w-[340px] h-[340px] md:w-[400px] md:h-[400px] flex items-center justify-center"
+                className="w-[340px] h-[350px] md:w-[420px] md:h-[410px] flex items-center justify-center"
               />
 
               {/* Dynamic Status Pill */}
