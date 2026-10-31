@@ -18,8 +18,28 @@ interface AuthState {
   signup: (name: string, email: string, password: string, targetRole?: string, seniority?: string) => Promise<void>;
   logout: () => Promise<void>;
   initializeAuth: () => Promise<void>;
-  upgradeSubscription: () => void;
-  downgradeSubscription: () => void;
+  upgradeSubscription: () => Promise<void>;
+  downgradeSubscription: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
+}
+
+/**
+ * SEC-04: Queries server-side Supabase profiles table rather than trusting client-only state.
+ */
+async function fetchUserSubscriptionTier(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error || !data) return false;
+    const tier = (data.subscription_tier || '').toLowerCase();
+    return tier === 'pro' || tier === 'enterprise';
+  } catch {
+    return false;
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -32,6 +52,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
+            const hasPro = await fetchUserSubscriptionTier(session.user.id);
             set({
               user: {
                 id: session.user.id,
@@ -39,10 +60,12 @@ export const useAuthStore = create<AuthState>()(
                 email: session.user.email || '',
                 targetRole: session.user.user_metadata?.target_role || 'Senior Full Stack Developer',
                 seniority: session.user.user_metadata?.seniority || 'Senior / Staff (5-8+ yrs)',
-                hasProSubscription: true,
+                hasProSubscription: hasPro,
               },
               isAuthenticated: true,
             });
+          } else {
+            set({ user: null, isAuthenticated: false });
           }
         } catch (err) {
           console.warn('[Auth Store] Session init notice:', err);
@@ -65,6 +88,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         if (data.user) {
+          const hasPro = await fetchUserSubscriptionTier(data.user.id);
           set({
             user: {
               id: data.user.id,
@@ -72,7 +96,7 @@ export const useAuthStore = create<AuthState>()(
               email: data.user.email || cleanEmail,
               targetRole: data.user.user_metadata?.target_role || 'Senior Full Stack Developer',
               seniority: data.user.user_metadata?.seniority || 'Senior / Staff (5-8+ yrs)',
-              hasProSubscription: true,
+              hasProSubscription: hasPro,
             },
             isAuthenticated: true,
           });
@@ -111,7 +135,7 @@ export const useAuthStore = create<AuthState>()(
               email: cleanEmail,
               targetRole: targetRole || 'Senior Full Stack Developer',
               seniority: seniority || 'Senior / Staff (5-8+ yrs)',
-              hasProSubscription: true,
+              hasProSubscription: false, // Default new accounts to free tier
             },
             isAuthenticated: Boolean(data.session),
           });
@@ -127,15 +151,40 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false });
       },
 
-      upgradeSubscription: () =>
+      upgradeSubscription: async () => {
+        const currentUser = get().user;
         set((state) => ({
           user: state.user ? { ...state.user, hasProSubscription: true } : null,
-        })),
+        }));
+        if (currentUser) {
+          await supabase
+            .from('profiles')
+            .update({ subscription_tier: 'pro' })
+            .eq('id', currentUser.id);
+        }
+      },
 
-      downgradeSubscription: () =>
+      downgradeSubscription: async () => {
+        const currentUser = get().user;
         set((state) => ({
           user: state.user ? { ...state.user, hasProSubscription: false } : null,
-        })),
+        }));
+        if (currentUser) {
+          await supabase
+            .from('profiles')
+            .update({ subscription_tier: 'free' })
+            .eq('id', currentUser.id);
+        }
+      },
+
+      refreshSubscription: async () => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+        const hasPro = await fetchUserSubscriptionTier(currentUser.id);
+        set((state) => ({
+          user: state.user ? { ...state.user, hasProSubscription: hasPro } : null,
+        }));
+      },
     }),
     {
       name: 'intervibe-auth-storage',
