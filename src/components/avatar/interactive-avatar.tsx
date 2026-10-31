@@ -96,11 +96,11 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 440;
 
-    // Scene & Camera (Zoomed-out portrait framing fitting the executive circular viewport)
+    // Scene & Camera (Reference framing matching uploaded executive portrait headshot)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
-    camera.position.set(0, 1.48, 1.32);
-    camera.lookAt(0, 1.44, 0);
+    const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 100);
+    camera.position.set(0, 1.58, 1.05);
+    camera.lookAt(0, 1.56, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -224,8 +224,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           rightForeArm.rotation.set(0, 0, 0);
         }
 
-        // 2. Zoomed-out portrait framing fitting cleanly inside the circular viewport (Image 4)
-        // Position camera relative to actual model head position so avatar head, shoulders, and chest fit comfortably
+        // 2. Reference portrait positioning (matching uploaded reference headshot)
+        // Moves the character slightly down so hair top has comfortable headroom (~18%)
+        // and shoulders/blazer fill the lower frame cutting off at mid-chest
         let headY = 1.62;
         if (headBone) {
           const worldPos = new THREE.Vector3();
@@ -233,9 +234,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           if (worldPos.y > 0) headY = worldPos.y;
         }
 
-        const targetY = headY - 0.22;
-        const camY = headY - 0.18;
-        camera.position.set(0, camY, 1.32);
+        const targetY = headY - 0.06;
+        const camY = headY - 0.04;
+        camera.position.set(0, camY, 1.05);
         camera.lookAt(0, targetY, 0);
 
         // 3. Reset any erroneous default model weights (e.g., tongueOut)
