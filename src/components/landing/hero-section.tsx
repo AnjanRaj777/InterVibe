@@ -1,4 +1,5 @@
 import React from "react"
+import { Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "./header"
 import Link from "next/link"
@@ -437,20 +438,38 @@ export function HeroSection() {
         <Header />
       </div>
 
-      <div className="relative z-10 space-y-4 md:space-y-5 lg:space-y-6 mb-6 md:mb-7 lg:mb-9 max-w-md md:max-w-[500px] lg:max-w-[588px] mt-16 md:mt-[120px] lg:mt-[160px] px-4">
-        <h1 className="text-foreground text-3xl md:text-4xl lg:text-6xl font-semibold leading-tight">
-          Unleash the Power of AI Agents
+      <div className="relative z-10 space-y-4 md:space-y-5 lg:space-y-6 mb-6 md:mb-7 lg:mb-9 max-w-md md:max-w-[640px] lg:max-w-[740px] mt-16 md:mt-[120px] lg:mt-[160px] px-4">
+        <h1 className="text-foreground text-3xl md:text-4xl lg:text-6xl font-semibold leading-tight tracking-tight">
+          Unleash the Interview That Hires You
         </h1>
-        <p className="text-muted-foreground text-base md:text-base lg:text-lg font-medium leading-relaxed max-w-lg mx-auto">
-          Accelerate your development workflow with intelligent AI agents that write, review, and optimize your code.
+        <p className="text-muted-foreground text-base md:text-lg font-medium leading-relaxed max-w-2xl mx-auto">
+          Real AI humans who interview like FAANG. Practice with voice, get scored by Muse, and walk in vibe-ready.
         </p>
       </div>
 
-      <Link href="/auth/signup">
-        <Button className="relative z-10 bg-secondary text-secondary-foreground hover:bg-secondary/90 px-8 py-3 rounded-full font-medium text-base shadow-lg ring-1 ring-white/10 cursor-pointer">
-          Signup for free
-        </Button>
-      </Link>
+      <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+        <Link href="/auth/signup">
+          <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-7 sm:px-8 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg ring-1 ring-white/10 cursor-pointer">
+            Start Your First Mock - Free
+          </Button>
+        </Link>
+        <a 
+          href="#preview-card"
+          onClick={(e) => {
+            e.preventDefault();
+            const el = document.getElementById("preview-card");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          <Button 
+            variant="outline" 
+            className="border-white/20 bg-white/5 hover:bg-white/10 text-foreground px-6 sm:px-7 py-3 rounded-full font-medium text-sm sm:text-base backdrop-blur-sm cursor-pointer transition-all flex items-center gap-2"
+          >
+            <Play className="size-3.5 fill-current" />
+            <span>Watch 30s Demo</span>
+          </Button>
+        </a>
+      </div>
     </section>
   )
 }
