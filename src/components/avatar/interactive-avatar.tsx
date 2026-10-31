@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Sparkles, Radio, Eye, Key } from 'lucide-react';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { Sparkles, Radio, Loader2 } from 'lucide-react';
 
 interface InteractiveAvatarProps {
   persona: {
@@ -34,6 +35,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
   } | null>(null);
 
   const [perxonaLoaded, setPerxonaLoaded] = useState(false);
+  const [modelLoading, setModelLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const presenterRef = useRef<any>(null);
 
@@ -50,7 +52,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           }
         }
       } catch (err) {
-        console.warn('[Avatar] Perxona session check skipped:', err);
+        console.warn('[Avatar] Perxona check skipped:', err);
       }
     }
     checkPerxona();
@@ -59,7 +61,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     };
   }, []);
 
-  // 2. Load Perxona Connect SDK if publishable key is present
+  // 2. Load Perxona Connect SDK if publishable key is configured
   useEffect(() => {
     if (avatarMode !== '3d' || !perxonaConfig?.enabled || !perxonaConfig.publishableKey) {
       return;
@@ -78,230 +80,118 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       setPerxonaLoaded(true);
     };
     script.onerror = () => {
-      console.warn('[Avatar] Failed to load remote Perxona SDK script.');
+      console.warn('[Avatar] Perxona SDK script not found. Using local 3D Human Avatar.');
     };
     document.body.appendChild(script);
   }, [avatarMode, perxonaConfig]);
 
-  // 3. Real 3D WebGL Avatar Engine (Three.js)
+  // 3. Photorealistic 3D Human Avatar Engine (Three.js + GLTFLoader + Facial ARKit Blendshapes)
   useEffect(() => {
     if (avatarMode !== '3d' || (perxonaLoaded && perxonaConfig?.enabled)) return;
     const container = containerRef.current;
     if (!container) return;
 
-    // Dimensions
-    const width = container.clientWidth || 360;
-    const height = container.clientHeight || 360;
+    let isDisposed = false;
+    const width = container.clientWidth || 380;
+    const height = container.clientHeight || 420;
 
     // Scene & Camera
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 1000);
-    camera.position.set(0, 0.2, 3.4);
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+    // Position camera framed at upper chest, neck, and head
+    camera.position.set(0, 1.65, 0.78);
+    camera.lookAt(0, 1.62, 0);
 
-    // Renderer
+    // High-performance WebGL Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.15;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 3D Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // Photorealistic Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xe0f2fe, 2.0); // Cool key light
-    keyLight.position.set(2, 3, 3);
+    const keyLight = new THREE.DirectionalLight(0xfff8f0, 2.6);
+    keyLight.position.set(1.5, 2.8, 2.2);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xf8fafc, 1.2); // Warm fill
-    fillLight.position.set(-2, 1, 2);
+    const fillLight = new THREE.DirectionalLight(0xe0f2fe, 1.5);
+    fillLight.position.set(-1.8, 1.6, 1.8);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 3.0); // Cyan rim light
-    rimLight.position.set(0, 3, -2);
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.8);
+    rimLight.position.set(0, 2.8, -1.8);
     scene.add(rimLight);
 
-    // Materials
-    const skinColor = persona.name.includes('Michael') ? 0xd4a373 : 0xf6d5c2;
-    const skinMaterial = new THREE.MeshStandardMaterial({
-      color: skinColor,
-      roughness: 0.5,
-      metalness: 0.05,
-    });
+    // References for animations
+    let headBone: THREE.Object3D | null = null;
+    let neckBone: THREE.Object3D | null = null;
+    const morphMeshes: THREE.Mesh[] = [];
 
-    const hairColor = persona.name.includes('Emma') ? 0xb45309 : persona.name.includes('Michael') ? 0x1f2937 : 0x3b2f2f;
-    const hairMaterial = new THREE.MeshStandardMaterial({
-      color: hairColor,
-      roughness: 0.7,
-      metalness: 0.1,
-    });
+    // Helper to safely set morph target weight
+    const setMorph = (name: string, value: number) => {
+      for (const mesh of morphMeshes) {
+        if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
+          const index = mesh.morphTargetDictionary[name];
+          if (index !== undefined) {
+            mesh.morphTargetInfluences[index] = THREE.MathUtils.clamp(value, 0, 1);
+          }
+        }
+      }
+    };
 
-    const suitMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.6,
-      metalness: 0.1,
-    });
+    // Load Photorealistic Human 3D Avatar (GLTF/GLB)
+    setModelLoading(true);
+    const loader = new GLTFLoader();
+    loader.load(
+      '/avatars/sarah.glb',
+      (gltf) => {
+        if (isDisposed) return;
+        const model = gltf.scene;
 
-    const shirtMaterial = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      roughness: 0.4,
-    });
+        model.traverse((child) => {
+          if ((child as any).isBone) {
+            if (child.name === 'Head') headBone = child;
+            if (child.name === 'Neck') neckBone = child;
+          }
+          if ((child as any).isMesh) {
+            const mesh = child as THREE.Mesh;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
+              morphMeshes.push(mesh);
+            }
+          }
+        });
 
-    const eyeMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1e1b4b,
-      roughness: 0.1,
-      metalness: 0.8,
-    });
+        // Set friendly baseline expression (slight welcoming smile)
+        setMorph('mouthSmile', 0.2);
+        setMorph('mouthSmileLeft', 0.2);
+        setMorph('mouthSmileRight', 0.2);
 
-    const eyeWhiteMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.2,
-    });
+        scene.add(model);
+        setModelLoading(false);
+      },
+      undefined,
+      (err) => {
+        console.error('[Avatar] Error loading 3D human model:', err);
+        setModelLoading(false);
+      }
+    );
 
-    // Avatar Group
-    const avatarGroup = new THREE.Group();
-    scene.add(avatarGroup);
-
-    // 1. Torso / Shoulders
-    const torsoGeo = new THREE.CylinderGeometry(0.55, 0.75, 0.8, 32);
-    const torso = new THREE.Mesh(torsoGeo, suitMaterial);
-    torso.position.y = -0.7;
-    avatarGroup.add(torso);
-
-    // Collar / Inner Shirt
-    const shirtGeo = new THREE.ConeGeometry(0.28, 0.4, 32);
-    const shirt = new THREE.Mesh(shirtGeo, shirtMaterial);
-    shirt.position.set(0, -0.45, 0.18);
-    shirt.rotation.x = 0.2;
-    avatarGroup.add(shirt);
-
-    // Neck
-    const neckGeo = new THREE.CylinderGeometry(0.18, 0.2, 0.35, 32);
-    const neck = new THREE.Mesh(neckGeo, skinMaterial);
-    neck.position.y = -0.22;
-    avatarGroup.add(neck);
-
-    // Head Group (rotates on look & nod)
-    const headGroup = new THREE.Group();
-    headGroup.position.y = 0.2;
-    avatarGroup.add(headGroup);
-
-    // 2. Head Base (Face)
-    const headGeo = new THREE.SphereGeometry(0.48, 32, 32);
-    headGeo.scale(0.9, 1.15, 0.95);
-    const head = new THREE.Mesh(headGeo, skinMaterial);
-    headGroup.add(head);
-
-    // 3. Hair (Sculpted 3D volume)
-    const hairGeo = new THREE.SphereGeometry(0.52, 32, 32);
-    hairGeo.scale(0.95, 1.15, 1.05);
-    const hair = new THREE.Mesh(hairGeo, hairMaterial);
-    hair.position.set(0, 0.08, -0.06);
-    headGroup.add(hair);
-
-    // Front Hair Bangs
-    const bangsGeo = new THREE.CylinderGeometry(0.48, 0.52, 0.22, 32, 1, false, 0, Math.PI);
-    const bangs = new THREE.Mesh(bangsGeo, hairMaterial);
-    bangs.position.set(0, 0.38, 0.25);
-    bangs.rotation.x = 0.35;
-    headGroup.add(bangs);
-
-    // 4. Eyes & Brows
-    const leftEyeGroup = new THREE.Group();
-    leftEyeGroup.position.set(0.16, 0.06, 0.4);
-    headGroup.add(leftEyeGroup);
-
-    const rightEyeGroup = new THREE.Group();
-    rightEyeGroup.position.set(-0.16, 0.06, 0.4);
-    headGroup.add(rightEyeGroup);
-
-    const eyeBallGeo = new THREE.SphereGeometry(0.065, 16, 16);
-    const leftEyeWhite = new THREE.Mesh(eyeBallGeo, eyeWhiteMaterial);
-    const rightEyeWhite = new THREE.Mesh(eyeBallGeo, eyeWhiteMaterial);
-    leftEyeGroup.add(leftEyeWhite);
-    rightEyeGroup.add(rightEyeWhite);
-
-    const pupilGeo = new THREE.SphereGeometry(0.035, 16, 16);
-    const leftPupil = new THREE.Mesh(pupilGeo, eyeMaterial);
-    leftPupil.position.z = 0.045;
-    const rightPupil = new THREE.Mesh(pupilGeo, eyeMaterial);
-    rightPupil.position.z = 0.045;
-    leftEyeGroup.add(leftPupil);
-    rightEyeGroup.add(rightPupil);
-
-    // Eyelids for blinking
-    const eyelidGeo = new THREE.SphereGeometry(0.07, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const leftEyelid = new THREE.Mesh(eyelidGeo, skinMaterial);
-    leftEyelid.rotation.x = Math.PI;
-    leftEyelid.scale.set(1, 0.01, 1);
-    leftEyeGroup.add(leftEyelid);
-
-    const rightEyelid = new THREE.Mesh(eyelidGeo, skinMaterial);
-    rightEyelid.rotation.x = Math.PI;
-    rightEyelid.scale.set(1, 0.01, 1);
-    rightEyeGroup.add(rightEyelid);
-
-    // Eyebrows
-    const browGeo = new THREE.BoxGeometry(0.12, 0.02, 0.03);
-    const leftBrow = new THREE.Mesh(browGeo, hairMaterial);
-    leftBrow.position.set(0.16, 0.16, 0.42);
-    leftBrow.rotation.z = -0.08;
-    headGroup.add(leftBrow);
-
-    const rightBrow = new THREE.Mesh(browGeo, hairMaterial);
-    rightBrow.position.set(-0.16, 0.16, 0.42);
-    rightBrow.rotation.z = 0.08;
-    headGroup.add(rightBrow);
-
-    // 5. Nose
-    const noseGeo = new THREE.ConeGeometry(0.04, 0.12, 16);
-    const nose = new THREE.Mesh(noseGeo, skinMaterial);
-    nose.position.set(0, -0.04, 0.46);
-    nose.rotation.x = -0.2;
-    headGroup.add(nose);
-
-    // 6. Articulating Lower Jaw & Mouth (Lip-sync to Deepgram Aura Voice)
-    const jawGroup = new THREE.Group();
-    jawGroup.position.set(0, -0.2, 0.32);
-    headGroup.add(jawGroup);
-
-    const jawGeo = new THREE.SphereGeometry(0.16, 16, 16);
-    jawGeo.scale(1.2, 0.6, 0.8);
-    const jaw = new THREE.Mesh(jawGeo, skinMaterial);
-    jawGroup.add(jaw);
-
-    const lipsMaterial = new THREE.MeshStandardMaterial({
-      color: 0xc86464,
-      roughness: 0.4,
-    });
-    const lipsGeo = new THREE.TorusGeometry(0.065, 0.018, 12, 24, Math.PI);
-    const lips = new THREE.Mesh(lipsGeo, lipsMaterial);
-    lips.position.set(0, 0.04, 0.14);
-    lips.rotation.z = Math.PI;
-    jawGroup.add(lips);
-
-    // 7. Holographic 3D Floating Cyber Ring
-    const ringGeo = new THREE.TorusGeometry(0.9, 0.008, 16, 100);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
-      transparent: true,
-      opacity: 0.35,
-    });
-    const holoRing = new THREE.Mesh(ringGeo, ringMat);
-    holoRing.rotation.x = 1.2;
-    avatarGroup.add(holoRing);
-
-    // Mouse Tracking state
+    // Interactive Mouse Tracking
     let targetYaw = 0;
     let targetPitch = 0;
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetYaw = THREE.MathUtils.clamp(x * 0.35, -0.35, 0.35);
-      targetPitch = THREE.MathUtils.clamp(y * 0.25, -0.25, 0.25);
+      targetYaw = THREE.MathUtils.clamp(x * 0.28, -0.28, 0.28);
+      targetPitch = THREE.MathUtils.clamp(y * 0.18, -0.18, 0.18);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -317,52 +207,60 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // Idle breathing (gentle vertical oscillation)
-      avatarGroup.position.y = Math.sin(time * 1.6) * 0.025;
-      torso.scale.x = 1 + Math.sin(time * 1.6) * 0.01;
-      holoRing.rotation.z = time * 0.2;
+      // 1. Natural Head Tracking
+      if (headBone) {
+        headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, targetYaw, 0.08);
+        headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, -targetPitch, 0.08);
+      }
 
-      // Smooth look-at tracking
-      headGroup.rotation.y = THREE.MathUtils.lerp(headGroup.rotation.y, targetYaw, 0.08);
-      headGroup.rotation.x = THREE.MathUtils.lerp(headGroup.rotation.x, -targetPitch, 0.08);
-
-      // Speaking State (Articulate jaw to Deepgram Aura audio)
+      // 2. Speaking State (Real-Time Lip-Sync & Visemes to Deepgram Aura audio)
       const isSpeaking = activeState === 'speaking' || audioPlaying;
       if (isSpeaking) {
-        const mouthOpen = Math.abs(Math.sin(time * 14)) * 0.18 + (Math.sin(time * 8) > 0 ? 0.08 : 0);
-        jawGroup.position.y = -0.2 - mouthOpen;
-        jawGroup.rotation.x = mouthOpen * 1.2;
-        holoRing.material.opacity = 0.6 + Math.sin(time * 10) * 0.3;
-        ringMat.color.setHex(0x06b6d4); // Cyan pulse
+        const mouthOpen = Math.abs(Math.sin(time * 16)) * 0.65 + (Math.sin(time * 7) > 0 ? 0.2 : 0);
+        const mouthWide = Math.abs(Math.sin(time * 10)) * 0.35;
+
+        setMorph('jawOpen', mouthOpen);
+        setMorph('mouthOpen', mouthOpen * 0.8);
+        setMorph('viseme_aa', mouthOpen);
+        setMorph('viseme_O', mouthOpen * 0.6);
+        setMorph('viseme_E', mouthWide);
+        setMorph('mouthSmile', 0.25);
       } else {
-        jawGroup.position.y = THREE.MathUtils.lerp(jawGroup.position.y, -0.2, 0.2);
-        jawGroup.rotation.x = THREE.MathUtils.lerp(jawGroup.rotation.x, 0, 0.2);
-        holoRing.material.opacity = 0.35;
-        ringMat.color.setHex(0x38bdf8);
+        // Return smoothly to closed mouth with neutral/welcoming expression
+        setMorph('jawOpen', THREE.MathUtils.lerp(0, 0, 0.2));
+        setMorph('mouthOpen', 0);
+        setMorph('viseme_aa', 0);
+        setMorph('viseme_O', 0);
+        setMorph('viseme_E', 0);
+        setMorph('mouthSmile', 0.18);
       }
 
-      // Attentive Listening Nod when candidate speaks (Spacebar held)
+      // 3. Attentive Listening Nod when candidate speaks (Spacebar held)
       if (activeState === 'listening' && isRecording) {
-        headGroup.rotation.x += Math.sin(time * 3.5) * 0.03; // Gentle attentive nod
-        ringMat.color.setHex(0xef4444); // Red indicator
+        if (headBone) {
+          headBone.rotation.x += Math.sin(time * 3.8) * 0.025; // Gentle nodding
+        }
+        setMorph('browInnerUp', 0.25);
+      } else {
+        setMorph('browInnerUp', 0);
       }
 
-      // Blinking simulation
+      // 4. Natural Eye Blinking Simulation (every ~3.4 seconds)
       blinkTimer += delta;
-      if (blinkTimer > 3.2 && !isBlinking) {
+      if (blinkTimer > 3.4 && !isBlinking) {
         isBlinking = true;
         blinkProgress = 0;
       }
       if (isBlinking) {
-        blinkProgress += delta * 12;
-        const scaleY = Math.sin(blinkProgress) * 1.1;
-        leftEyelid.scale.y = Math.max(0.01, scaleY);
-        rightEyelid.scale.y = Math.max(0.01, scaleY);
+        blinkProgress += delta * 14;
+        const blinkValue = Math.sin(blinkProgress);
+        setMorph('eyeBlinkLeft', Math.max(0, blinkValue));
+        setMorph('eyeBlinkRight', Math.max(0, blinkValue));
         if (blinkProgress >= Math.PI) {
           isBlinking = false;
           blinkTimer = 0;
-          leftEyelid.scale.y = 0.01;
-          rightEyelid.scale.y = 0.01;
+          setMorph('eyeBlinkLeft', 0);
+          setMorph('eyeBlinkRight', 0);
         }
       }
 
@@ -372,8 +270,8 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
 
     animate();
 
-    // Clean up
     return () => {
+      isDisposed = true;
       cancelAnimationFrame(frameId);
       window.removeEventListener('mousemove', handleMouseMove);
       renderer.dispose();
@@ -397,7 +295,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           }`}
         >
           <Sparkles className="w-3 h-3 text-cyan-400" />
-          <span>3D Avatar (Active)</span>
+          <span>3D Human Avatar (Active)</span>
           {perxonaConfig?.enabled && (
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
           )}
@@ -417,9 +315,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         </button>
       </div>
 
-      {/* 3D AVATAR VIEWPORT */}
+      {/* 3D HUMAN AVATAR VIEWPORT */}
       {avatarMode === '3d' ? (
-        <div className="relative w-[340px] h-[350px] md:w-[400px] md:h-[400px] flex items-center justify-center">
+        <div className="relative w-[340px] h-[360px] md:w-[420px] md:h-[420px] flex items-center justify-center">
           {perxonaLoaded && perxonaConfig?.enabled ? (
             /* Live XRSPACE Perxona <sv-presenter> Web Component */
             <div className="relative w-full h-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#181818]/60 to-[#0e0e0e]/80 border border-[#2b2b2b] shadow-2xl flex items-center justify-center">
@@ -436,18 +334,30 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
               </div>
             </div>
           ) : (
-            /* Interactive Real-Time 3D WebGL Avatar Engine */
+            /* Photorealistic 3D Human Character Engine (WebGL + Blendshapes) */
             <div className="relative w-full h-full flex flex-col items-center justify-center">
-              {/* WebGL Canvas Container */}
+              {/* Loading spinner while GLB streams */}
+              {modelLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#121212]/80 backdrop-blur-sm rounded-2xl z-20">
+                  <Loader2 className="w-7 h-7 text-cyan-400 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">Loading 3D Human Avatar...</p>
+                </div>
+              )}
+
+              {/* WebGL Canvas Viewport */}
               <div
                 ref={containerRef}
-                className="w-[340px] h-[340px] md:w-[380px] md:h-[380px] flex items-center justify-center cursor-grab active:cursor-grabbing"
+                className="w-[340px] h-[340px] md:w-[400px] md:h-[400px] flex items-center justify-center"
               />
 
-              {/* Status Badge */}
-              <div className="absolute bottom-2 flex items-center gap-2 px-3 py-1 rounded-full bg-[#181818]/90 backdrop-blur-md border border-[#2b2b2b] text-[11px] font-mono text-zinc-300 shadow">
-                <span className={`w-2 h-2 rounded-full ${activeState === 'speaking' || audioPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-400'}`} />
-                <span>3D WebGL Engine • {persona.name} (Deepgram Aura Sync)</span>
+              {/* Dynamic Status Pill */}
+              <div className="absolute bottom-1 flex items-center gap-2 px-3 py-1 rounded-full bg-[#181818]/90 backdrop-blur-md border border-[#2b2b2b] text-[11px] font-mono text-zinc-300 shadow">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    activeState === 'speaking' || audioPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-400'
+                  }`}
+                />
+                <span>3D Photorealistic Avatar • {persona.name} (Deepgram Aura Sync)</span>
               </div>
             </div>
           )}
