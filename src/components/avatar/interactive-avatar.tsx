@@ -12,6 +12,7 @@ interface InteractiveAvatarProps {
     avatar: string;
     voice: string;
     auraVoice?: string;
+    model?: string;
   };
   activeState: 'speaking' | 'thinking' | 'listening' | 'idle';
   isRecording: boolean;
@@ -151,8 +152,12 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     // Load Photorealistic Human 3D Avatar (GLTF/GLB)
     setModelLoading(true);
     const loader = new GLTFLoader();
+    const modelUrl = persona.model || '/avatars/sarah.glb';
+    const isStrict = persona.name.toLowerCase().includes('michael');
+    const baseSmile = isStrict ? 0.05 : 0.18;
+
     loader.load(
-      '/avatars/sarah.glb',
+      modelUrl,
       (gltf) => {
         if (isDisposed) return;
         const model = gltf.scene;
@@ -195,9 +200,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         setMorph('tongueOut', 0);
         setMorph('mouthOpen', 0);
         setMorph('jawOpen', 0);
-        setMorph('mouthSmile', 0.18);
-        setMorph('mouthSmileLeft', 0.18);
-        setMorph('mouthSmileRight', 0.18);
+        setMorph('mouthSmile', baseSmile);
+        setMorph('mouthSmileLeft', baseSmile);
+        setMorph('mouthSmileRight', baseSmile);
 
         scene.add(model);
         setModelLoading(false);
@@ -302,9 +307,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         setMorph('viseme_aa', currentVisemeAA);
         setMorph('viseme_O', currentVisemeO);
         setMorph('viseme_E', currentVisemeE);
-        setMorph('mouthSmile', 0.18);
-        setMorph('mouthSmileLeft', 0.18);
-        setMorph('mouthSmileRight', 0.18);
+        setMorph('mouthSmile', baseSmile);
+        setMorph('mouthSmileLeft', baseSmile);
+        setMorph('mouthSmileRight', baseSmile);
       }
 
       // 4. Attentive Listening Nod when candidate speaks (Spacebar held)

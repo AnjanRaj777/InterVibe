@@ -30,30 +30,33 @@ import {
 import { InteractiveAvatar } from '@/components/avatar/interactive-avatar';
 
 // Persona metadata
-const PERSONAS: Record<string, { name: string; title: string; latency: string; voice: string; avatar: string; auraVoice: string }> = {
+const PERSONAS: Record<string, { name: string; title: string; latency: string; voice: string; avatar: string; auraVoice: string; model: string }> = {
   'Sarah - Friendly HR': {
     name: 'Sarah Chen',
     title: 'Sarah — Friendly HR • 3 yrs at Linear',
     latency: '320ms',
     voice: 'Muse',
     avatar: '/avatars/sarah.webp',
-    auraVoice: 'aura-asteria-en'
+    auraVoice: 'aura-asteria-en',
+    model: '/avatars/sarah.glb'
   },
   'Michael - Strict Engineering Manager': {
     name: 'Michael Vance',
     title: 'Michael — Strict EM • 6 yrs at Stripe',
     latency: '410ms',
     voice: 'Muse',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-    auraVoice: 'aura-orion-en'
+    avatar: '/avatars/michael.webp',
+    auraVoice: 'aura-orion-en',
+    model: '/avatars/michael.glb'
   },
   'Emma - British Technical Lead': {
     name: 'Emma Watson',
     title: 'Emma — British Tech Lead • 4 yrs at DeepMind',
     latency: '350ms',
     voice: 'Muse',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-    auraVoice: 'aura-luna-en'
+    avatar: '/avatars/emma.webp',
+    auraVoice: 'aura-luna-en',
+    model: '/avatars/emma.glb'
   }
 };
 
@@ -1219,7 +1222,7 @@ ${resumeText.substring(0, 10000)}
                       {currentPersona.name}
                     </h2>
                     <p className="font-mono text-[11px] text-zinc-500">
-                      Friendly HR • Response latency {currentPersona.latency} • Voice: {currentPersona.voice}
+                      {currentPersona.title} • Latency {currentPersona.latency} • Voice: {currentPersona.voice}
                     </p>
                   </div>
 
