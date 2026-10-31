@@ -96,10 +96,10 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 440;
 
-    // Scene & Camera (Reference framing matching uploaded executive portrait headshot)
+    // Scene & Camera (Reference framing with generous headroom so character head never clips)
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 100);
-    camera.position.set(0, 1.58, 1.05);
+    camera.position.set(0, 1.60, 1.15);
     camera.lookAt(0, 1.56, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
@@ -224,9 +224,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           rightForeArm.rotation.set(0, 0, 0);
         }
 
-        // 2. Reference portrait positioning (matching uploaded reference headshot)
-        // Moves the character slightly down so hair top has comfortable headroom (~18%)
-        // and shoulders/blazer fill the lower frame cutting off at mid-chest
+        // 2. Reference portrait positioning
+        // Moves the character bit more down so the head has ample headroom (~30%)
+        // and never clips out of the top of the viewport
         let headY = 1.62;
         if (headBone) {
           const worldPos = new THREE.Vector3();
@@ -234,9 +234,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           if (worldPos.y > 0) headY = worldPos.y;
         }
 
-        const targetY = headY - 0.06;
-        const camY = headY - 0.04;
-        camera.position.set(0, camY, 1.05);
+        const targetY = headY - 0.04;
+        const camY = headY + 0.02;
+        camera.position.set(0, camY, 1.15);
         camera.lookAt(0, targetY, 0);
 
         // 3. Reset any erroneous default model weights (e.g., tongueOut)
@@ -573,20 +573,17 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           if (isSpeaking) {
             barHeight = `${speakHeights[c % speakHeights.length]}px`;
             animStyle = {
-              animation: `waveDance 0.8s ease-in-out infinite alternate`,
-              animationDelay: `${m[c % m.length]}s`,
+              animation: `waveDance 0.8s ease-in-out ${m[c % m.length]}s infinite alternate`,
             };
           } else if (isThinking) {
             barHeight = '8px';
             animStyle = {
-              animation: `waveDance 1.6s ease-in-out infinite alternate`,
-              animationDelay: `${c * 0.1}s`,
+              animation: `waveDance 1.6s ease-in-out ${c * 0.1}s infinite alternate`,
             };
           } else if (isMicRecording) {
             barHeight = `${12 + (c % 4) * 4}px`;
             animStyle = {
-              animation: `waveDance 0.6s ease-in-out infinite alternate`,
-              animationDelay: `${(11 - c) * 0.08}s`,
+              animation: `waveDance 0.6s ease-in-out ${(11 - c) * 0.08}s infinite alternate`,
             };
           }
 

@@ -177,6 +177,8 @@ export default function InterviewPage() {
 
   // Calculate active persona info
   const currentPersona = PERSONAS[interviewerVoice] || PERSONAS['Sarah - Friendly HR'];
+  const currentPersonaRef = useRef(currentPersona);
+  currentPersonaRef.current = currentPersona;
 
   // Determine current active visual state
   const activeState: 'speaking' | 'thinking' | 'listening' = manualState || (
@@ -408,7 +410,7 @@ export default function InterviewPage() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Deepgram Aura Asteria TTS (Primary Voice Output)
+  // Deepgram Aura TTS (Primary Voice Output)
   const playTTS = async (text: string) => {
     if (!voiceModeRef.current) return;
 
@@ -423,18 +425,14 @@ export default function InterviewPage() {
     setIsPlaying(true);
 
     try {
-      const cleanText = text
-        .replace(/[*_#`~>\[\]\(\)]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      const auraModel = currentPersona.auraVoice || 'aura-asteria-en';
+      const persona = currentPersonaRef.current || currentPersona;
+      const auraModel = persona.auraVoice || 'aura-asteria-en';
 
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          text: cleanText,
+          text,
           model: auraModel,
         })
       });
@@ -455,16 +453,15 @@ export default function InterviewPage() {
       };
 
       audio.onerror = (e) => {
-        console.error("Deepgram audio playback error", e);
+        console.error("Deepgram audio playback error:", e);
         setIsPlaying(false);
         audioElementRef.current = null;
-        playNativeTTSFallback(text);
       };
 
       await audio.play();
     } catch (e: any) {
-      console.warn("Deepgram TTS fallback triggered:", e.message);
-      playNativeTTSFallback(text);
+      console.warn("Deepgram TTS playback failed:", e.message);
+      setIsPlaying(false);
     }
   };
 
