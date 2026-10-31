@@ -1,228 +1,227 @@
-# InterVibe 🎙️ — Voice-First AI Mock Interview Copilot
+# InterVibe 🎙️⚡
 
-> Practice any job interview by conversing naturally with an AI interviewer calibrated to your resume and target job description.
+> **Next-Generation Real-Time AI Verbal Mock Interview Simulator & Performance Diagnostics Platform**  
+> *Engineered for the Meta AI Developer Hackathon*
 
-[![CI Status](https://github.com/AnjanRaj777/InterVibe/actions/workflows/ci.yml/badge.svg)](https://github.com/AnjanRaj777/InterVibe/actions/workflows/ci.yml)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?logo=typescript)
-![Next.js](https://img.shields.io/badge/Next.js-16.4-black?logo=next.js)
-![Node.js](https://img.shields.io/badge/Node.js-22%2B-green?logo=node.js)
-![Meta Model API](https://img.shields.io/badge/Meta%20AI-Muse%20Spark%201.3-8A2BE2)
-![License](https://img.shields.io/badge/License-MIT-brightgreen)
-
-InterVibe is an autonomous, voice-driven mock interview copilot engineered for the **Meta Global AI Developer Hackathon** (Indie Track · *Build for Your World*). 
-
-Unlike generic interview bots with static question lists, InterVibe ingests your real resume and target Job Description (JD), diagnoses your skills against the role's must-haves, trains your gaps with FAANG-depth follow-up probing, conducts a timed voice interview with real-time barge-in capability, and provides rubric-backed scoring with verified transcript quotes.
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.6-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue?style=flat-square&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![Meta Muse](https://img.shields.io/badge/Meta%20AI-Muse%20Spark%201.3-0668E1?style=flat-square&logo=meta)](https://ai.meta.com/)
+[![Deepgram](https://img.shields.io/badge/Deepgram-Aura%20TTS-13EF93?style=flat-square)](https://deepgram.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
 
-## 🌟 Key Highlights
+## 🌟 Overview
 
-- **⚡ Zero-Friction Setup**: One single setup card for resume upload (PDF, DOCX, TXT), JD input, and a single **Start** button. No multi-screen onboarding maze.
-- **🗣️ Natural Real-Time Voice Loop**: Built on bidirectional WebSockets with live partial transcription, sub-second latency, and native barge-in (interrupt the AI interviewer anytime you speak).
-- **🎯 Precision Diagnosis & Prep Planner**: Dynamically extracts `CandidateProfile` and `JDProfile`, identifying verified strengths and skill gaps, then generates a tailored `PrepPlan`.
-- **📊 Rubric-Backed Scoring Gate**: Evaluates answers across 5 core dimensions (*Depth/Correctness, Structure, Communication Clarity, JD Relevance, Evidence/Examples*). Every score references exact transcript quotes.
-- **🔄 Dual Endings**: 
-  - **Pass (≥ 70%)**: Instantly renders and exports a personalized Master Practice Document (STAR stories, model answers, keywords).
-  - **Needs Work (< 70%)**: Delivers a motivational feedback report, targeted drill schedule, and seamless 1-click re-test entry.
-- **🎧 High-Performance Synthesis**: Hybrid TTS architecture supporting zero-cost client-side synthesis via **Kokoro** (WebGPU/WASM) and Piper, plus cloud ultra-low latency streaming via **Groq Orpheus**.
-- **🔒 Enterprise-Grade Privacy & Cost Control**: All model keys remain strictly server-side. Implements Meta prefix prompt caching and automatic context compaction after ~12 turns.
+**InterVibe** bridges the gap between passive technical interview preparation and high-stakes live verbal loops. By combining real-time speech processing, resume memory injection, dynamic persona emulation, and conversational AI, InterVibe replicates realistic technical screeners and system design interviews.
+
+Candidates speak naturally using low-latency **Push-to-Talk**, receive real-time verbal rebuttals from lifelike AI interviewer personas, and exit every session with **exhaustive diagnostics, executive scores, and targeted practice drills**.
 
 ---
 
-## 🏗️ System Architecture & Workflow
+## ✨ Key Features
 
-```text
- ┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
- │  Resume Upload  │  ───► │ Resume & JD     │  ───► │ Skill Diagnosis  │
- │  + Target JD    │       │ Parsing (JSON)  │       │ & Prep Planner   │
- └─────────────────┘       └─────────────────┘       └─────────┬────────┘
-                                                               │
-                                                               ▼
- ┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
- │  Dual Outcome:  │  ◄─── │ Multi-Dimension │  ◄─── │ Live Voice Mock  │
- │  Practice Doc   │       │ Scoring Gate    │       │ (Barge-in / STT) │
- │  or Re-training │       │ (70-pt bar)     │       │                  │
- └─────────────────┘       └─────────────────┘       └──────────────────┘
+### 🎙️ Direct 16kHz PCM Push-to-Talk Audio Stream
+- **Zero-Accidental-Cutoffs**: Push-to-talk audio loop (hold `Spacebar` to speak, release to process) eliminates premature VAD silences during complex thought pauses.
+- **Client-Side Resampling**: Web Audio API `AudioContext` and `ScriptProcessorNode` capture 32-bit float raw audio and downsample linearly to 16,000Hz 16-bit mono WAV in-browser before streaming to STT.
+
+### 🧠 Meta Muse Spark 1.3 LLM Reasoning
+- Powered by **Meta Muse Spark 1.3 Contributor** via the Meta Model API.
+- Implements strict persona roleplay, one-question-at-a-time verbal discipline, context-aware technical cross-examination, and dynamic difficulty scaling.
+- Automated fallback to Groq Cloud ensures high availability.
+
+### 🗣️ Conversational Speech-to-Text & Text-to-Speech
+- **STT**: **Meta Muse Voice Transcribe 1.0** with fallback to Groq Whisper Large v3.
+- **TTS**: Low-latency neural synthesis via **Deepgram Aura** (Asteria, Orion, Luna) with automatic fallback to native Web Speech Synthesis.
+
+### 📄 Contextual Resume Parsing & Memory Injection
+- Server-side parsing (`pdf2json`) extracts past projects, tech stacks, and seniority bars directly into the interviewer’s system memory.
+- The AI cross-examines candidate claims against specific Job Description (JD) requirements.
+
+### 📊 Comprehensive Post-Session Diagnostics & Analytics
+- **Executive Evaluator Assessment**: High-level qualitative summary of performance against seniority bars.
+- **Quantified Scoring**: Overall readiness index, verbal score, and practice speaking time.
+- **Actionable Vectors**: Categorized breakdown of *Observed Strengths*, *Areas for Improvement*, and *Recommended Practice Drills*.
+- **Radar & Skill Competency Diagnostics**: Granular breakdowns across System Architecture, Technical Depth, Problem Solving, and Communication Clarity.
+
+### 🎨 Clean Developer Experience & Adaptive UI
+- **Design Presets**: Switchable between **▲ Vercel Minimalist Monochrome** and **⚡ Supabase Emerald Accents**.
+- **Dark & Light Modes**: Full semantic theme support with high-contrast readability.
+- **Interactive Studio**: Animated avatar breathing rings, dynamic soundwave equalizer bars, and real-time auto-scrolling transcript console.
+
+---
+
+## 🎭 Interviewer Personas
+
+| Persona | Role & Archetype | Voice Model | Target Tone |
+| :--- | :--- | :--- | :--- |
+| **Sarah Chen** | Senior Technical Recruiter (Linear) | Deepgram Aura Asteria (Female) | Warm, behavioral, culture alignment, structured STAR probing |
+| **Michael Vance** | Strict Engineering Manager (Stripe) | Deepgram Aura Orion (Male) | Direct, rigorous, architectural trade-offs, edge-case pressure |
+| **Emma Watson** | British Technical Lead (DeepMind) | Deepgram Aura Luna (Female) | Deep technical precision, distributed systems, clean code standards |
+
+---
+
+## 🏗️ Architecture & Pipeline
+
+```mermaid
+flowchart LR
+    A["Candidate Microphone\n(Web Audio API)"] -->|"16kHz Raw PCM WAV"| B["Meta Muse Voice Transcribe\n(STT)"]
+    B -->|"Transcript Text"| C["Meta Muse Spark 1.3\n(LLM Persona)"]
+    R["Resume (PDF) +\nJob Description"] -->|"Context Memory"| C
+    C -->|"Conversational Reply"| D["Deepgram Aura\n(TTS Engine)"]
+    D -->|"Audio Stream"| E["Browser Speaker\n(Live Playback)"]
+    C -->|"Full Dialogue"| F["Meta Muse Evaluator\n(Analysis Engine)"]
+    F -->|"Diagnostics & Score"| G["Performance Dashboard\n(Overview & Telemetry)"]
 ```
 
-### Full State Machine
-```text
-setup ──► parsed ──► diagnosing ──► plan_ready ──► comms_training? ──► drilling ──► live_mock ──► scored
-                                                                                                    │
-                                                    ┌───────────────────────────────────────────────┴────────────────────────────┐
-                                                    ▼ (Score >= 70)                                                              ▼ (Score < 70)
-                                            document_ready                                                               retraining ──► re-test
+---
+
+## 📂 Repository Structure
+
 ```
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology | Details |
-|---|---|---|
-| **Frontend** | **Next.js 16 (App Router)** | TypeScript, React 19, Turbopack, Dark Mode |
-| **Design System** | **Astryx Design System** | `@astryxdesign/core`, `@astryxdesign/theme-neutral`, StyleX |
-| **Backend API** | **Node.js + Hono** | High-performance custom TypeScript API service on port `8787` |
-| **Contracts** | **`@intervibe/contracts`** | Shared strict TypeScript interfaces & Zod validation schemas |
-| **Database** | **PostgreSQL** | Supabase connection pooling or local PostgreSQL |
-| **Object Storage**| **S3-Compatible / MinIO** | Secure resume and document storage |
-| **LLM Reasoning** | **Muse Spark 1.3** | Meta Model API (`muse-spark-1.3`) in **Standard Mode** |
-| **Speech-to-Text**| **Muse Voice Transcribe**| `muse-voice-transcribe-1.0` realtime WebSocket with native endpointing |
-| **Text-to-Speech**| **Kokoro / Groq / Piper** | On-device WebGPU/WASM worker (`kokoro-js`) + Groq Orpheus API |
-
----
-
-## 📂 Monorepo Structure
-
-```text
-mock-interview/
-├── apps/
-│   ├── api/                   # Custom backend service (port 8787)
-│   │   ├── src/
-│   │   │   ├── auth/          # Authentication & session storage
-│   │   │   ├── db/            # PostgreSQL migrations & connection pool
-│   │   │   ├── diagnose/      # Adaptive skill check & gap diagnosis
-│   │   │   ├── drill/         # Interactive question prompts & follow-ups
-│   │   │   ├── ingest/        # Resume (PDF/DOCX/TXT) & JD parsing engine
-│   │   │   ├── meta/          # Meta Model API client & prompt cache manager
-│   │   │   ├── sessions/      # Interview session state machine
-│   │   │   ├── storage/       # S3 storage layer
-│   │   │   ├── tts/           # Groq TTS client
-│   │   │   └── voice/         # Realtime WebSocket voice pipeline
-│   │   └── test/              # Vitest unit & integration test suites
-│   └── web/                   # Next.js web application (port 3000)
-│       ├── app/
-│       │   ├── diagnose/      # Diagnostic quiz interface
-│       │   ├── mock/          # Live voice interview cockpit with barge-in
-│       │   └── setup/         # Single-screen intake card
-│       └── lib/               # Audio workers (Kokoro, Piper), WebRTC/WS clients
-├── packages/
-│   └── contracts/             # Shared Zod schemas, types, and chunking logic
-├── db/
-│   └── migrations/            # SQL migration files
-├── fixtures/                  # Golden candidate personas & audio test clips
-├── startup.bat                # Windows 1-click startup automation script
-└── docker-compose.yml         # Local Postgres & MinIO containers
+InterVibe/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── analyze-interview/   # Meta Muse Spark session evaluation
+│   │   │   ├── chat/                # Meta Muse Spark 1.3 LLM conversational loop
+│   │   │   ├── extract-resume/      # PDF text extraction route
+│   │   │   ├── stt/                 # Meta Muse Voice Transcribe audio endpoint
+│   │   │   └── tts/                 # Deepgram Aura text-to-speech endpoint
+│   │   ├── auth/login/              # Authentication view
+│   │   ├── dashboard/
+│   │   │   ├── billing/             # Subscription & tier management
+│   │   │   ├── interview/           # Live Avatar Studio, Push-to-Talk, & Config
+│   │   │   ├── overview/            # Performance diagnostics, KPIs, & history
+│   │   │   └── profile/             # Profile, General Settings & appearance presets
+│   │   ├── layout.tsx               # Root layout with ThemeProvider & Toaster
+│   │   └── page.tsx                 # Landing / Redirect
+│   ├── components/
+│   │   ├── layout/                  # Responsive app sidebar, header, breadcrumbs
+│   │   ├── themes/                  # Theme switcher & mode toggle components
+│   │   └── ui/                      # shadcn/ui components (Radix primitives)
+│   ├── config/                      # Navigation and persona configuration
+│   ├── hooks/                       # Custom responsive and theme hooks
+│   ├── lib/                         # Utility helpers and cn() class merge
+│   ├── store/                       # Zustand stores (Auth, Sessions, Diagnostics)
+│   └── styles/                      # Tailwind CSS v4 & custom keyframe animations
+├── public/                          # Avatars, logos, and static assets
+├── .env.example                     # Environment template
+├── package.json                     # Scripts and dependencies
+└── tsconfig.json                    # TypeScript configuration
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### ⚡ One-Click Quick Start (Windows)
 
-- **Node.js**: `v22.0.0` or higher
-- **npm**: `v10.0.0` or higher
-- **Meta Model API Key**: For Muse Spark and Muse Voice Transcribe
-- **PostgreSQL Database**: Local or hosted (e.g., Supabase)
-
-### 1. Clone & Configure
-
-```bash
-git clone https://github.com/AnjanRaj777/InterVibe.git
-cd InterVibe
-```
-
-Copy the example environment configuration:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your credentials:
-
-```dotenv
-# Meta Model API key (Standard mode only)
-MODEL_API_KEY=your_meta_model_api_key
-
-# PostgreSQL connection string
-DATABASE_URL=postgres://user:password@localhost:5432/intervibe
-
-# S3 / MinIO storage
-STORAGE_ENDPOINT=http://localhost:9000
-STORAGE_BUCKET=intervibe-docs
-STORAGE_ACCESS_KEY=minioadmin
-STORAGE_SECRET_KEY=minioadmin
-
-# Auth configuration
-AUTH_SECRET=a_random_32_character_string_for_sessions
-APP_URL=http://localhost:3000
-PORT=8787
-
-# Optional: Groq API key for low-latency cloud TTS
-GROQ_API_KEY=your_groq_api_key
-```
-
-### 2. Fast Launch (Windows)
-
-Double-click `startup.bat` or run:
+On Windows, you can simply double-click `startup.bat` in the project root or run:
 
 ```cmd
 startup.bat
 ```
 
-The script automatically:
-1. Validates prerequisites and `.env` values.
-2. Installs workspace dependencies.
-3. Compiles the `@intervibe/contracts` package.
-4. Applies PostgreSQL schema migrations.
-5. Boots both the API (`http://localhost:8787`) and Web client (`http://localhost:3000`).
+The script automatically verifies your Node.js/npm runtime, generates `.env.local` from `.env.example` if absent, installs dependencies if `node_modules` is missing, and provides a menu to launch the dev server with automatic browser opening.
 
-### 3. Manual Launch (Cross-Platform)
+---
+
+### 1. Prerequisites
+- **Node.js**: `18.18+` or `20+`
+- **npm** or **pnpm**
+- Modern Chromium-based browser (Google Chrome, Brave, Edge) with microphone permissions enabled.
+
+### 2. Clone & Install
 
 ```bash
-# Install dependencies and build shared contracts
+git clone https://github.com/your-username/intervibe.git
+cd intervibe
 npm install
-npm run build --workspace=@intervibe/contracts
+```
 
-# Run DB migrations
-npm run migrate --workspace=@intervibe/api
+### 3. Environment Variables Configuration
 
-# Start backend service (terminal 1)
-npm run dev --workspace=@intervibe/api
+Create a `.env.local` file in the root directory:
 
-# Start frontend application (terminal 2)
-npm run dev --workspace=@intervibe/web
+```bash
+cp .env.example .env.local
+```
+
+Populate the keys in `.env.local`:
+
+```env
+# Meta Model API - LLM (Meta Muse Spark 1.3 Contributor)
+MODEL_API_KEY=your_meta_model_api_key
+META_API_BASE=https://api.meta.ai/v1
+SPARK_MODEL_ID=muse-spark-1.3-contributor
+
+# Meta Muse Voice Transcribe (STT)
+TRANSCRIBE_MODEL_ID=muse-voice-transcribe-1.0
+MUSE_API_KEY=your_meta_muse_api_key
+
+# Deepgram Aura (Primary TTS)
+DEEPGRAM_API_KEY=your_deepgram_aura_api_key
+
+# Groq Cloud (High-Availability Fallback)
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-120b
+
+# App Metadata
+NEXT_PUBLIC_APP_NAME=InterVibe
+```
+
+### 4. Run the Development Server
+
+```bash
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
----
-
-## 🧪 Testing & Validation
-
-InterVibe maintains a strict test-driven development workflow with automated CI verification:
+### 5. Production Build Verification
 
 ```bash
-# Typecheck all monorepo workspaces
-npm run typecheck
-
-# Execute unit and contract test suites (Vitest)
-npm run test
-
-# Lint code across workspaces
-npm run lint
-
-# Production build verification
 npm run build
+npm run start
 ```
-
-### Voice Pipeline Latency Benchmarks
-
-Our test suite rigorously verifies voice exchange latencies against defined targets:
-- **First Audio Response**: Measured $\le 2500\text{ ms}$ (p95 latency achieves $\sim 37\text{ ms}$ on local mock streams).
-- **Barge-In Interruption Detection**: Measured $\le 300\text{ ms}$ (p95 latency achieves $\sim 1\text{ ms}$).
 
 ---
 
-## 🛡️ Security & Privacy
+## 🎯 How to Use InterVibe
 
-- **Server-Side API Key Shield**: The browser never receives or stores `MODEL_API_KEY` or cloud credentials.
-- **Meta Standard Mode**: Strictly runs in Standard Mode to guarantee user resumes, JDs, and transcripts are never retained or trained on by Meta models.
-- **PII Scrubbing**: Document extraction isolates parsed data without recording or leaking PII in logs.
+1. **Upload Resume**: Upload your resume (`.pdf`) or select "Use Demo Resume". InterVibe extracts key technical experience, frameworks, and achievements into the interviewer's working memory.
+2. **Configure Loop**: Specify your target job title, job description, seniority level, interview focus (System Design, Behavioral, or Mixed), and preferred interviewer persona.
+3. **Enter Studio**: 
+   - Hold the **Spacebar** down while speaking your answer.
+   - Release the **Spacebar** to stream your voice to the transcription model.
+   - Listen to the AI interviewer respond naturally via neural audio with real-time reactive avatar states.
+4. **Review Diagnostics**: Click **End Interview** to generate your AI Evaluator Report, comprehensive scores, strengths, improvement vectors, and recommended drill roadmap.
+
+---
+
+## 🛠️ Tech Stack & Integrations
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
+- **Frontend**: [React 19](https://react.dev/), [TypeScript 5.7](https://www.typescriptlang.org/), [Tailwind CSS v4](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/), [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand) with `localStorage` persistence
+- **LLM Engine**: [Meta Muse Spark 1.3 Contributor](https://ai.meta.com/) (Meta AI)
+- **Speech-to-Text**: [Meta Muse Voice Transcribe 1.0](https://ai.meta.com/) / Groq Whisper Large v3
+- **Text-to-Speech**: [Deepgram Aura](https://deepgram.com/) (Asteria, Orion, Luna) + Web Speech API fallback
+- **Document Processing**: `pdf2json`
+- **Feedback & Notifications**: [Sonner](https://sonner.emilkowal.ski/)
+
+---
+
+## 🏆 Hackathon Context
+
+This project was built for the **Meta AI Developer Hackathon**, focusing on practical, high-impact conversational applications powered by Meta's frontier generative AI models (**Meta Muse Spark 1.3** and **Meta Muse Voice Transcribe**).
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+Distributed under the MIT License. See `LICENSE` for more information.
