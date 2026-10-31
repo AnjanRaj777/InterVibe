@@ -174,6 +174,8 @@ export default function InterviewPage() {
   const availableVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
   const transcriptConsoleRef = useRef<HTMLDivElement | null>(null);
   const textInputRef = useRef<HTMLInputElement | null>(null);
+  const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
+  const stopRecordingRef = useRef<((cancelProcessing?: boolean) => Promise<void>) | null>(null);
 
   // Calculate active persona info
   const currentPersona = PERSONAS[interviewerVoice] || PERSONAS['Sarah - Friendly HR'];
@@ -239,7 +241,7 @@ export default function InterviewPage() {
 
       if (e.key === 'Escape') {
         if (isRecordingRef.current) {
-          stopRecording(true);
+          stopRecordingRef.current?.(true);
           toast.info("Recording cancelled");
         }
         if (audioElementRef.current) {
@@ -260,7 +262,7 @@ export default function InterviewPage() {
       if (stepRef.current === 'interview' && voiceModeRef.current) {
         e.preventDefault();
         if (!isRecordingRef.current && !isProcessingAudioRef.current && !isPlayingRef.current) {
-          startRecording();
+          startRecordingRef.current?.();
         }
       }
     };
@@ -276,14 +278,14 @@ export default function InterviewPage() {
       if (stepRef.current === 'interview' && voiceModeRef.current) {
         e.preventDefault();
         if (isRecordingRef.current) {
-          stopRecording(false);
+          stopRecordingRef.current?.(false);
         }
       }
     };
 
     const handleBlur = () => {
       if (isRecordingRef.current) {
-        stopRecording(false);
+        stopRecordingRef.current?.(false);
       }
     };
 
@@ -316,29 +318,9 @@ export default function InterviewPage() {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
-      stopRecording(true);
+      stopRecordingRef.current?.(true);
     };
   }, []);
-
-  // Pro Subscription Gate
-  if (!user?.hasProSubscription) {
-    return (
-      <div className="flex flex-1 flex-col justify-center items-center h-full min-h-[500px] text-center space-y-4 max-w-md mx-auto p-6">
-        <div className="size-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-          <AlertCircle className="size-8" />
-        </div>
-        <h1 className="text-2xl font-bold">Pro Subscription Required</h1>
-        <p className="text-muted-foreground text-sm">
-          Access to the live AI verbal interview simulator is available to Pro members.
-        </p>
-        <div className="flex gap-3">
-          <Link href="/dashboard/billing">
-            <Button>Upgrade to Pro ($15/mo)</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   // 1. Resume Upload Handler
   const handleUpload = async () => {
@@ -599,6 +581,9 @@ export default function InterviewPage() {
     await handleSTT(wavBlob);
   };
 
+  startRecordingRef.current = startRecording;
+  stopRecordingRef.current = stopRecording;
+
   // Speech-to-Text Handler (Meta Muse Voice Transcribe)
   const handleSTT = async (audioBlob: Blob) => {
     setIsProcessingAudio(true);
@@ -845,6 +830,26 @@ ${resumeText.substring(0, 10000)}
     setResumeText("");
     setResumeFilename("");
   };
+
+  // Pro Subscription Gate
+  if (!user?.hasProSubscription) {
+    return (
+      <div className="flex flex-1 flex-col justify-center items-center h-full min-h-[500px] text-center space-y-4 max-w-md mx-auto p-6">
+        <div className="size-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+          <AlertCircle className="size-8" />
+        </div>
+        <h1 className="text-2xl font-bold">Pro Subscription Required</h1>
+        <p className="text-muted-foreground text-sm">
+          Access to the live AI verbal interview simulator is available to Pro members.
+        </p>
+        <div className="flex gap-3">
+          <Link href="/dashboard/billing">
+            <Button>Upgrade to Pro ($15/mo)</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full w-full bg-background text-foreground selection:bg-primary/10 antialiased p-3 md:p-6">
