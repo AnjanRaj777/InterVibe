@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: SPARK_MODEL,
         messages: formattedMessages,
-        temperature: 0.3,
-        max_tokens: 2048,
+        temperature: 0.1,
+        max_tokens: 1500,
       }),
     });
 

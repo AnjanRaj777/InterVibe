@@ -27,6 +27,7 @@ import {
   FileText,
   Sliders
 } from 'lucide-react';
+import { InteractiveAvatar } from '@/components/avatar/interactive-avatar';
 
 // Persona metadata
 const PERSONAS: Record<string, { name: string; title: string; latency: string; voice: string; avatar: string; auraVoice: string }> = {
@@ -142,6 +143,7 @@ export default function InterviewPage() {
 
   // Manual state override pill support
   const [manualState, setManualState] = useState<'speaking' | 'thinking' | 'listening' | null>(null);
+  const [avatarMode, setAvatarMode] = useState<'3d' | '2d'>('3d');
 
   // Summary & Analysis State
   const [showSummary, setShowSummary] = useState(false);
@@ -1187,106 +1189,17 @@ ${resumeText.substring(0, 10000)}
                   </button>
                 </div>
 
-                {/* Center Circular Avatar & Radar Waves */}
-                <div className="relative flex flex-col items-center">
-                  
-                  {/* Animated Radar Pulse Rings */}
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                    {activeState === 'speaking' && (
-                      <>
-                        <div className="absolute -inset-[30px] rounded-full border border-white/10" style={{ animation: "pulseRing 2.2s ease-out infinite" }} />
-                        <div className="absolute -inset-[60px] rounded-full border border-white/[0.06]" style={{ animation: "pulseRing 2.2s 0.4s ease-out infinite" }} />
-                        <div className="absolute -inset-[90px] rounded-full border border-white/[0.03]" style={{ animation: "pulseRing 2.2s 0.8s ease-out infinite" }} />
-                      </>
-                    )}
-                    {activeState === 'thinking' && (
-                      <div className="absolute -inset-[24px] rounded-full bg-white/[0.04] blur-[20px]" />
-                    )}
-                    {activeState === 'listening' && isRecording && (
-                      <div className="absolute -inset-[30px] rounded-full border border-red-500/20" style={{ animation: "pulseRing 1.8s ease-out infinite" }} />
-                    )}
-                  </div>
-
-                  {/* Avatar Frame with Breathing Animation */}
-                  <div 
-                    className="relative rounded-full p-[3px] bg-gradient-to-b from-[#2a2a2a] to-[#151515] shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_40px_-12px_rgba(0,0,0,0.9)]"
-                    style={{
-                      animation: activeState === 'speaking' ? "avatarBreathe 1.6s ease-in-out infinite" : 'none'
-                    }}
-                  >
-                    <div className="relative rounded-full p-[4px] bg-[#0e0e0e]">
-                      <div className="h-[220px] w-[220px] md:h-[280px] md:w-[280px] rounded-full overflow-hidden bg-[#181818] relative">
-                        <img 
-                          src={currentPersona.avatar} 
-                          alt={currentPersona.name} 
-                          className="h-full w-full object-cover scale-[1.02]" 
-                        />
-                        <div className="absolute inset-0 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.4)]" />
-                        {activeState === 'speaking' && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                        )}
-                      </div>
-
-                      {/* Corner Status Dot */}
-                      <div className={`absolute -bottom-1 -right-1 h-8 w-8 rounded-full border-[3px] border-[#121212] grid place-items-center transition-all duration-300 ${
-                        activeState === 'speaking' ? 'bg-[#ff4a3d] scale-100' :
-                        activeState === 'thinking' ? 'bg-[#facc15] scale-100' :
-                        (isRecording ? 'bg-[#ff4a3d] scale-100' : 'bg-[#22c55e] scale-90')
-                      }`}>
-                        <div className={`h-2 w-2 rounded-full bg-white ${activeState === 'speaking' || isRecording ? 'animate-pulse' : ''}`} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Equalizer Soundwave Bars (12 bars) */}
-                  <div className="mt-8 md:mt-10 flex items-end gap-[4px] h-[32px]">
-                    {[...Array(12)].map((_, c) => {
-                      const isSpeaking = activeState === 'speaking';
-                      const isThinking = activeState === 'thinking';
-                      const isMicRecording = isRecording;
-                      const m = [0, 0.1, 0.2, 0.15, 0.05, 0.25, 0.12, 0.18, 0.08, 0.22, 0.11, 0.19];
-                      const speakHeights = [10, 18, 26, 14, 22, 30, 16, 24, 12, 20, 28, 14];
-
-                      let barHeight = '4px';
-                      let barBg = 'bg-zinc-700';
-                      let animName = 'none';
-                      let animDuration = '0s';
-
-                      if (isSpeaking) {
-                        barHeight = `${speakHeights[c]}px`;
-                        barBg = 'bg-white';
-                        animName = c % 4 === 0 ? 'wave3' : c % 3 === 0 ? 'wave2' : 'wave';
-                        animDuration = `${0.6 + m[c]}s`;
-                      } else if (isMicRecording) {
-                        const dynamicH = Math.max(4, Math.min(32, Math.round(audioLevel * 0.3 * (0.8 + (c % 4) * 0.2))));
-                        barHeight = `${dynamicH}px`;
-                        barBg = 'bg-red-400';
-                        animName = 'none';
-                        animDuration = '0s';
-                      } else if (isThinking) {
-                        barHeight = '10px';
-                        barBg = 'bg-zinc-500';
-                        animName = 'wave3';
-                        animDuration = `${1.2 + m[c]}s`;
-                      }
-
-                      return (
-                        <div 
-                          key={c}
-                          className={`w-[4px] rounded-full transition-all duration-300 ${barBg}`}
-                          style={{
-                            height: barHeight,
-                            opacity: isSpeaking || isMicRecording ? 1 : 0.5,
-                            animationName: animName,
-                            animationDuration: animDuration,
-                            animationTimingFunction: 'ease-in-out',
-                            animationDelay: `${m[c]}s`,
-                            animationIterationCount: 'infinite'
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
+                {/* INTERACTIVE AVATAR STAGE (3D XRSPACE Behavior AI™ / 2D Minimal with Deepgram Aura Voice) */}
+                <div className="relative flex flex-col items-center w-full">
+                  <InteractiveAvatar
+                    persona={currentPersona}
+                    activeState={activeState}
+                    isRecording={isRecording}
+                    audioPlaying={isPlaying}
+                    avatarMode={avatarMode}
+                    onToggleMode={setAvatarMode}
+                  />
+                </div>
 
                   {/* Persona and State Subtitles */}
                   <div className="mt-4 flex flex-col items-center gap-2 text-center">
@@ -1309,7 +1222,6 @@ ${resumeText.substring(0, 10000)}
                       Friendly HR • Response latency {currentPersona.latency} • Voice: {currentPersona.voice}
                     </p>
                   </div>
-                </div>
 
                 {/* RIGHT SIDE CONTEXT & AUDIO TELEMETRY WIDGETS */}
                 <div className="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 flex-col gap-3">
