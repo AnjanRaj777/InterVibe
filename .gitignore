@@ -26,10 +26,12 @@ yarn-error.log*
 .env*.local
 .env
 
-# markdown files (ignore all except README.md)
+# markdown files (ignore all except README.md, AUDIT_REPORT.md, SECURITY.md)
 *.md
 !README.md
 !readme.md
+!AUDIT_REPORT.md
+!SECURITY.md
 
 # vercel
 .vercel
