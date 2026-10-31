@@ -34,7 +34,8 @@ import {
   Palette,
   Check,
   Sun,
-  Moon
+  Moon,
+  Camera
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -51,6 +52,9 @@ export default function ProfilePage() {
   const [seniority, setSeniority] = useState('Senior / Staff');
   const [targetCompanies, setTargetCompanies] = useState('Linear, Stripe, Meta, OpenAI');
   const [bio, setBio] = useState('Full Stack Engineer with 6+ years of experience scaling Next.js, Node.js, distributed microservices, and high-throughput real-time voice architectures.');
+  const [avatarUrl, setAvatarUrl] = useState('https://i.pravatar.cc/150?img=32');
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false);
+  const [tempAvatarUrl, setTempAvatarUrl] = useState('');
   
   // Tech Stack Tags
   const [tags, setTags] = useState<string[]>(['Next.js', 'React', 'TypeScript', 'Node.js', 'PostgreSQL', 'WebSockets', 'System Design']);
@@ -89,6 +93,21 @@ export default function ProfilePage() {
   // Profile Save
   const handleSaveProfile = () => {
     toast.success("Profile preferences saved successfully!");
+  };
+
+  // Avatar Options
+  const presetAvatars = [
+    'https://i.pravatar.cc/150?img=32',
+    'https://i.pravatar.cc/150?img=68',
+    'https://i.pravatar.cc/150?img=12',
+    'https://i.pravatar.cc/150?img=47',
+    'https://i.pravatar.cc/150?img=60',
+  ];
+
+  const handleSelectAvatar = (url: string) => {
+    setAvatarUrl(url);
+    setShowAvatarDialog(false);
+    toast.success("Profile avatar updated");
   };
 
   // Microphone Volume Tester
@@ -160,115 +179,296 @@ export default function ProfilePage() {
   };
 
   return (
-    <PageContainer pageTitle="Candidate Profile & Settings" pageDescription="Manage your professional background, target job criteria, audio hardware, and platform appearance.">
+    <PageContainer 
+      pageTitle="Candidate Profile & Settings" 
+      pageDescription="Manage your professional background, target job criteria, audio hardware, and platform appearance."
+    >
       <div className="space-y-6 max-w-6xl mx-auto pb-12">
 
-        {/* 2-Column Responsive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* LEFT COLUMN: IDENTITY CARD (4 cols on lg) */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Identity & Status Card */}
-            <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
-              <div className="h-24 bg-gradient-to-r from-emerald-500/10 via-muted to-purple-500/10 border-b border-border dark:border-[#1e1e1e] relative">
-                <div className="absolute top-3 right-3">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-background/80 border border-border text-[10px] font-mono text-emerald-500 dark:text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    PRO MEMBER
-                  </span>
-                </div>
-              </div>
+        {/* 1. HORIZONTAL CANDIDATE PROFILE HERO BANNER */}
+        <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
+          {/* Subtle top banner strip */}
+          <div className="h-2 bg-gradient-to-r from-emerald-500/40 via-primary/30 to-purple-500/40 border-b border-border dark:border-[#1e1e1e]" />
 
-              <CardContent className="pt-0 relative px-6 pb-6">
-                <div className="-mt-12 mb-4 flex justify-between items-end">
-                  <div className="relative">
-                    <div className="h-20 w-20 rounded-full border-4 border-card dark:border-[#121212] overflow-hidden bg-muted shadow-xl">
-                      <img 
-                        src="https://i.pravatar.cc/150?img=32" 
-                        alt="Candidate Avatar" 
-                        className="h-full w-full object-cover" 
-                      />
-                    </div>
-                    <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-card dark:border-[#121212]" />
+          <CardContent className="p-5 md:p-6">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              
+              {/* Left: Avatar & Candidate Identity */}
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="relative group">
+                  <div className="h-20 w-20 rounded-full border-2 border-border dark:border-[#2a2a2a] overflow-hidden bg-muted shadow-md">
+                    <img 
+                      src={avatarUrl} 
+                      alt="Candidate Avatar" 
+                      className="h-full w-full object-cover" 
+                    />
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 text-xs bg-muted/50 border-border text-foreground hover:bg-muted"
-                    onClick={() => toast.info("Avatar update enabled")}
+                  <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-emerald-500 border-2 border-card dark:border-[#121212]" />
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarDialog(true)}
+                    className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] font-mono text-white cursor-pointer"
                   >
-                    Change Avatar
-                  </Button>
+                    <Camera className="size-4 mb-0.5" />
+                    <span>Change</span>
+                  </button>
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold text-foreground tracking-tight">{name}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-bold text-foreground tracking-tight">{name}</h3>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-500 dark:text-emerald-400 font-semibold">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      PRO MEMBER
+                    </span>
+                  </div>
                   <p className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
                     <Mail className="size-3.5 text-muted-foreground" />
                     {email}
                   </p>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-border dark:border-[#1e1e1e] space-y-2.5 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-mono">Current Status:</span>
-                    <span className="text-emerald-500 dark:text-emerald-400 font-medium">Actively Interviewing</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-mono">Target Role:</span>
-                    <span className="text-foreground truncate max-w-[170px]">{targetRole}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-mono">Seniority Bar:</span>
-                    <span className="text-foreground">{seniority}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-mono">Mock Loops Done:</span>
-                    <span className="font-mono text-foreground font-semibold">{sessions.length} sessions</span>
+                  <div className="pt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAvatarDialog(true)}
+                      className="text-[11px] font-mono text-primary hover:underline cursor-pointer"
+                    >
+                      Change Avatar
+                    </button>
+                    <span className="text-muted-foreground font-mono text-[10px]">•</span>
+                    <span className="text-[11px] font-mono text-emerald-500 dark:text-emerald-400 font-medium">
+                      Actively Interviewing
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                <div className="mt-6 pt-4 border-t border-border dark:border-[#1e1e1e] flex gap-2">
-                  <Link href="/dashboard/interview" className="flex-1">
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5">
-                      <Mic className="size-3.5" /> Start Interview
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="shrink-0 bg-muted/30 border-border text-muted-foreground hover:text-red-500 hover:border-red-500/30"
-                    onClick={() => logout()}
-                    title="Sign Out"
-                  >
-                    <LogOut className="size-4" />
+              {/* Middle: Horizontal Metrics & Telemetry Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-3 px-4 rounded-xl bg-muted/40 dark:bg-[#161616] border border-border dark:border-[#222] flex-1 w-full lg:w-auto">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
+                    Target Role
+                  </span>
+                  <span className="text-xs font-semibold text-foreground truncate block mt-0.5" title={targetRole}>
+                    {targetRole}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
+                    Seniority Bar
+                  </span>
+                  <span className="text-xs font-semibold text-foreground truncate block mt-0.5" title={seniority}>
+                    {seniority}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
+                    Mock Loops Done
+                  </span>
+                  <span className="text-xs font-mono font-bold text-foreground block mt-0.5">
+                    {sessions.length} sessions
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
+                    Audio Telemetry
+                  </span>
+                  <span className="text-xs font-mono font-medium text-emerald-500 dark:text-emerald-400 block mt-0.5">
+                    ● 16kHz WAV Mono
+                  </span>
+                </div>
+              </div>
+
+              {/* Right: Actions */}
+              <div className="flex sm:flex-row lg:flex-col items-center gap-2 w-full lg:w-auto shrink-0">
+                <Link href="/dashboard/interview" className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5 h-9 px-4 rounded-xl shadow-xs cursor-pointer">
+                    <Mic className="size-3.5" /> Start Interview
                   </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full sm:w-auto h-9 text-xs font-mono text-muted-foreground hover:text-red-500 hover:border-red-500/30 gap-1.5 rounded-xl cursor-pointer"
+                  onClick={() => logout()}
+                  title="Sign Out"
+                >
+                  <LogOut className="size-3.5" /> Sign Out
+                </Button>
+              </div>
+
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 2. BALANCED 2-COLUMN SETTINGS GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* LEFT COLUMN: CAREER CRITERIA & RESUME (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
+            
+            {/* CAREER & TARGET ROLE CRITERIA */}
+            <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
+              <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-lg bg-muted grid place-items-center text-foreground">
+                      <Briefcase className="size-4" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold text-foreground">Career &amp; Target Role Criteria</CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground">
+                        Configures how AI recruiters tailor technical questions.
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveProfile}
+                    className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5 cursor-pointer"
+                  >
+                    <Save className="size-3.5" /> Save Changes
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground font-mono">Target Job Title</label>
+                    <Input 
+                      value={targetRole} 
+                      onChange={(e) => setTargetRole(e.target.value)} 
+                      className="bg-background border-border text-foreground text-xs"
+                      placeholder="e.g. Senior Full Stack Developer"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground font-mono">Target Seniority Bar</label>
+                    <Select value={seniority} onValueChange={setSeniority}>
+                      <SelectTrigger className="bg-background border-border text-foreground text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Junior / Mid-Level">Junior / Mid-Level (1-3 yrs)</SelectItem>
+                        <SelectItem value="Mid-Level">Mid-Level (3-5 yrs)</SelectItem>
+                        <SelectItem value="Senior / Staff">Senior / Staff (5-8+ yrs)</SelectItem>
+                        <SelectItem value="Principal / Architect">Principal / Architect (10+ yrs)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground font-mono">Target Companies or Bar Level</label>
+                  <Input 
+                    value={targetCompanies} 
+                    onChange={(e) => setTargetCompanies(e.target.value)} 
+                    className="bg-background border-border text-foreground text-xs"
+                    placeholder="e.g. Linear, Stripe, Meta, OpenAI, Anthropic"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground font-mono">Professional Elevator Summary</label>
+                  <Textarea 
+                    value={bio} 
+                    onChange={(e) => setBio(e.target.value)} 
+                    className="min-h-[85px] bg-background border-border text-foreground text-xs leading-relaxed"
+                    placeholder="Brief overview of your architectural strengths and core impact..."
+                  />
+                </div>
+
+                {/* Tech Stack Chips */}
+                <div className="space-y-2 pt-1">
+                  <label className="text-xs font-semibold text-foreground font-mono">Primary Technical Competencies</label>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {tags.map((tag) => (
+                      <span 
+                        key={tag} 
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border text-xs font-mono text-foreground"
+                      >
+                        {tag}
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemoveTag(tag)}
+                          className="hover:text-red-500 text-muted-foreground cursor-pointer text-sm leading-none"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                    <div className="flex items-center gap-1.5">
+                      <Input 
+                        value={newTag} 
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        placeholder="+ Add skill tag" 
+                        className="h-7 w-28 text-xs bg-background border-border"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleAddTag}
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Quick Audio Telemetry Summary */}
-            <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] p-5 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Audio Telemetry</span>
-                <span className="text-[11px] font-mono text-emerald-500 dark:text-emerald-400">● 16kHz WAV Mono</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Direct 32-bit float raw PCM capture resampled to 16,000Hz s16le for <strong className="text-foreground">Meta Muse Voice Transcribe 1.0</strong>.
-              </p>
-              <div className="pt-2 border-t border-border dark:border-[#1e1e1e] flex items-center justify-between text-xs font-mono">
-                <span className="text-muted-foreground">Engine:</span>
-                <span className="text-foreground">Meta Muse Spark 1.3</span>
-              </div>
+            {/* ACTIVE RESUME CONTEXT */}
+            <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
+              <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-lg bg-blue-500/10 grid place-items-center text-blue-500 dark:text-blue-400">
+                    <FileText className="size-4" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold text-foreground">Active Resume Repository</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground">
+                      The resume currently parsed into the AI interviewer memory context.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/30 dark:bg-[#161616] dark:border-[#222]">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 grid place-items-center">
+                      <CheckCircle2 className="size-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{activeResumeName}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                        {charCount.toLocaleString()} characters indexed for AI cross-examination
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link href="/dashboard/interview">
+                      <Button variant="outline" size="sm" className="h-8 text-xs bg-card border-border hover:bg-muted text-foreground cursor-pointer">
+                        <Upload className="size-3.5 mr-1" /> Re-upload
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
 
           </div>
 
-          {/* RIGHT COLUMN: DETAILED SETTINGS (8 cols on lg) */}
-          <div className="lg:col-span-8 space-y-6">
+          {/* RIGHT COLUMN: APPEARANCE, AUDIO & ACCOUNT RESET (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
             
-            {/* GENERAL SETTINGS: APPEARANCE & DESIGN PRESET (VERCEL & SUPABASE) */}
+            {/* GENERAL SETTINGS: PLATFORM APPEARANCE */}
             <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
               <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
                 <div className="flex items-center gap-2.5">
@@ -380,137 +580,24 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* 1. CAREER & TARGET ROLE SETTINGS */}
+            {/* AUDIO HARDWARE & TELEMETRY */}
             <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
               <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-lg bg-muted grid place-items-center text-foreground">
-                      <Briefcase className="size-4" />
+                    <div className="size-8 rounded-lg bg-emerald-500/10 grid place-items-center text-emerald-500 dark:text-emerald-400">
+                      <Mic className="size-4" />
                     </div>
                     <div>
-                      <CardTitle className="text-base font-semibold text-foreground">Career &amp; Target Role Criteria</CardTitle>
+                      <CardTitle className="text-base font-semibold text-foreground">Audio Hardware &amp; Speech Loop</CardTitle>
                       <CardDescription className="text-xs text-muted-foreground">
-                        Configures how AI recruiters (Sarah, Michael, Emma) tailor technical questions.
+                        Test your candidate microphone and customize default voice interaction modes.
                       </CardDescription>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    onClick={handleSaveProfile}
-                    className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5"
-                  >
-                    <Save className="size-3.5" /> Save Changes
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-5 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground font-mono">Target Job Title</label>
-                    <Input 
-                      value={targetRole} 
-                      onChange={(e) => setTargetRole(e.target.value)} 
-                      className="bg-background border-border text-foreground"
-                      placeholder="e.g. Senior Full Stack Developer"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground font-mono">Target Seniority Bar</label>
-                    <Select value={seniority} onValueChange={setSeniority}>
-                      <SelectTrigger className="bg-background border-border text-foreground">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Junior / Mid-Level">Junior / Mid-Level (1-3 yrs)</SelectItem>
-                        <SelectItem value="Mid-Level">Mid-Level (3-5 yrs)</SelectItem>
-                        <SelectItem value="Senior / Staff">Senior / Staff (5-8+ yrs)</SelectItem>
-                        <SelectItem value="Principal / Architect">Principal / Architect (10+ yrs)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground font-mono">Target Companies or Bar Level</label>
-                  <Input 
-                    value={targetCompanies} 
-                    onChange={(e) => setTargetCompanies(e.target.value)} 
-                    className="bg-background border-border text-foreground"
-                    placeholder="e.g. Linear, Stripe, Meta, OpenAI, Anthropic"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground font-mono">Professional Elevator Summary</label>
-                  <Textarea 
-                    value={bio} 
-                    onChange={(e) => setBio(e.target.value)} 
-                    className="min-h-[75px] bg-background border-border text-foreground text-xs leading-relaxed"
-                    placeholder="Brief overview of your architectural strengths and core impact..."
-                  />
-                </div>
-
-                {/* Tech Stack Chips */}
-                <div className="space-y-2 pt-1">
-                  <label className="text-xs font-semibold text-foreground font-mono">Primary Technical Competencies</label>
-                  <div className="flex flex-wrap gap-2 items-center">
-                    {tags.map((tag) => (
-                      <span 
-                        key={tag} 
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border text-xs font-mono text-foreground"
-                      >
-                        {tag}
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveTag(tag)}
-                          className="hover:text-red-500 text-muted-foreground cursor-pointer"
-                        >
-                          &times;
-                        </button>
-                      </span>
-                    ))}
-                    <div className="flex items-center gap-1.5">
-                      <Input 
-                        value={newTag} 
-                        onChange={(e) => setNewTag(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
-                        placeholder="+ Add skill tag" 
-                        className="h-7 w-28 text-xs bg-background border-border"
-                      />
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleAddTag}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 2. AUDIO HARDWARE & INTERVIEWER PREFERENCES */}
-            <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
-              <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-lg bg-emerald-500/10 grid place-items-center text-emerald-500 dark:text-emerald-400">
-                    <Mic className="size-4" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base font-semibold text-foreground">Audio Hardware &amp; Speech Loop</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      Test your candidate microphone and customize default voice interaction modes.
-                    </CardDescription>
-                  </div>
+                  <span className="text-[10px] font-mono text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    16kHz WAV
+                  </span>
                 </div>
               </CardHeader>
               <CardContent className="pt-5 space-y-4">
@@ -556,11 +643,23 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Telemetry specs banner */}
+                <div className="p-3 rounded-xl border border-border bg-muted/20 dark:bg-[#161616] text-xs font-mono space-y-1 text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>Direct 32-bit Float PCM:</span>
+                    <strong className="text-foreground">Meta Muse Voice 1.0</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>LLM Reasoning Engine:</span>
+                    <strong className="text-foreground">Meta Muse Spark 1.3</strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-foreground font-mono">Default Interviewer Persona</label>
                     <Select value={defaultPersona} onValueChange={setDefaultPersona}>
-                      <SelectTrigger className="bg-background border-border text-foreground">
+                      <SelectTrigger className="bg-background border-border text-foreground text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -574,7 +673,7 @@ export default function ProfilePage() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-foreground font-mono">Push-to-Talk Voice Trigger</label>
                     <Select value={pushToTalkMode} onValueChange={setPushToTalkMode}>
-                      <SelectTrigger className="bg-background border-border text-foreground">
+                      <SelectTrigger className="bg-background border-border text-foreground text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -587,46 +686,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* 3. ACTIVE RESUME CONTEXT */}
-            <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
-              <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-lg bg-blue-500/10 grid place-items-center text-blue-500 dark:text-blue-400">
-                    <FileText className="size-4" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base font-semibold text-foreground">Active Resume Repository</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      The resume currently parsed into the AI interviewer memory context.
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-5">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/30 dark:bg-[#161616] dark:border-[#222]">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 grid place-items-center">
-                      <CheckCircle2 className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{activeResumeName}</p>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                        {charCount.toLocaleString()} characters indexed for AI cross-examination
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Link href="/dashboard/interview">
-                      <Button variant="outline" size="sm" className="h-8 text-xs bg-card border-border hover:bg-muted text-foreground">
-                        <Upload className="size-3.5 mr-1" /> Re-upload
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 4. DATA & ACCOUNT MANAGEMENT */}
+            {/* DATA & ACCOUNT MANAGEMENT */}
             <Card className="rounded-[20px] border border-border bg-card dark:border-[#222] dark:bg-[#121212] overflow-hidden shadow-sm">
               <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-4">
                 <div className="flex items-center gap-2.5">
@@ -652,7 +712,7 @@ export default function ProfilePage() {
                   variant="destructive" 
                   size="sm" 
                   onClick={() => setShowResetModal(true)}
-                  className="h-8 text-xs font-semibold gap-1.5 shrink-0"
+                  className="h-8 text-xs font-semibold gap-1.5 shrink-0 cursor-pointer"
                 >
                   <Trash2 className="size-3.5" /> Reset History
                 </Button>
@@ -664,6 +724,59 @@ export default function ProfilePage() {
         </div>
 
       </div>
+
+      {/* AVATAR SELECTION MODAL */}
+      <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
+        <DialogContent className="max-w-md bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold text-foreground">Select Profile Avatar</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Choose from candidate avatars or enter a custom image URL.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-center gap-3">
+              {presetAvatars.map((url, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSelectAvatar(url)}
+                  className={`h-12 w-12 rounded-full border-2 overflow-hidden cursor-pointer transition-transform hover:scale-105 ${
+                    avatarUrl === url ? 'border-primary ring-2 ring-primary/40' : 'border-border'
+                  }`}
+                >
+                  <img src={url} alt={`Avatar ${i}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5 pt-2 border-t border-border">
+              <label className="text-xs font-mono text-muted-foreground">Custom Image URL</label>
+              <div className="flex gap-2">
+                <Input
+                  value={tempAvatarUrl}
+                  onChange={(e) => setTempAvatarUrl(e.target.value)}
+                  placeholder="https://example.com/avatar.jpg"
+                  className="text-xs bg-background border-border text-foreground"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (tempAvatarUrl.trim()) {
+                      handleSelectAvatar(tempAvatarUrl.trim());
+                      setTempAvatarUrl('');
+                    }
+                  }}
+                  className="text-xs shrink-0"
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* DANGER RESET CONFIRMATION DIALOG */}
       <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
@@ -683,7 +796,7 @@ export default function ProfilePage() {
               variant="outline" 
               size="sm" 
               onClick={() => setShowResetModal(false)}
-              className="text-xs"
+              className="text-xs cursor-pointer"
             >
               Cancel
             </Button>
@@ -691,7 +804,7 @@ export default function ProfilePage() {
               variant="destructive" 
               size="sm" 
               onClick={handleResetAllData}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold"
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer"
             >
               Confirm Delete
             </Button>

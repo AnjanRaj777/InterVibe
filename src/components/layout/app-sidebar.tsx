@@ -115,21 +115,6 @@ export default function AppSidebar() {
             </SidebarMenu>
           </SidebarGroup>
         ))}
-
-        {/* Interview Credits Widget (Auto-hidden on icon collapse) */}
-        <div className='mt-auto p-3 group-data-[collapsible=icon]:hidden'>
-          <Link href="/dashboard/billing" className="block">
-            <div className='rounded-xl bg-card hover:bg-muted/50 border border-border p-3 shadow-xs transition-colors cursor-pointer'>
-              <p className='text-[12px] font-medium text-foreground'>Interview credits</p>
-              <p className='text-[11px] text-muted-foreground mt-1 leading-snug'>
-                3 of 10 sessions used this month
-              </p>
-              <div className='h-1.5 w-full bg-muted rounded-full mt-3 overflow-hidden'>
-                <div className='h-full w-[30%] bg-foreground rounded-full' />
-              </div>
-            </div>
-          </Link>
-        </div>
       </SidebarContent>
 
       {/* FOOTER USER CARD (PERFECTLY CENTERED WHEN COLLAPSED) */}

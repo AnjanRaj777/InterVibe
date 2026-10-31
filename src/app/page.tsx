@@ -1,149 +1,88 @@
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Mic, Sparkles, Zap, ShieldCheck, ArrowRight, Bot, AudioWaveform, FileText, CheckCircle2 } from 'lucide-react';
+import { HeroSection } from "@/components/landing/hero-section";
+import { DashboardPreview } from "@/components/landing/dashboard-preview";
+import { SocialProof } from "@/components/landing/social-proof";
+import { BentoSection } from "@/components/landing/bento-section";
+import { LargeTestimonial } from "@/components/landing/large-testimonial";
+import { PricingSection } from "@/components/landing/pricing-section";
+import { TestimonialGridSection } from "@/components/landing/testimonial-grid-section";
+import { FAQSection } from "@/components/landing/faq-section";
+import { CTASection } from "@/components/landing/cta-section";
+import { FooterSection } from "@/components/landing/footer-section";
+import { AnimatedSection } from "@/components/landing/animated-section";
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-      {/* Navbar */}
-      <header className="border-b border-border/40 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto w-full">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shadow-sm">
-            IV
+    <div 
+      className="min-h-screen bg-[#0f1211] text-[#e7eceb] relative overflow-hidden pb-0 font-sans selection:bg-[#78fcd6] selection:text-[#0d0f0e]"
+      style={{
+        ['--background' as any]: '210 11% 7%',
+        ['--foreground' as any]: '160 14% 93%',
+        ['--primary' as any]: '165 96% 71%',
+        ['--primary-foreground' as any]: '160 8% 6%',
+        ['--primary-dark' as any]: '160 100% 50%',
+        ['--primary-light' as any]: '160 48% 87%',
+        ['--secondary' as any]: '160 14% 93%',
+        ['--secondary-foreground' as any]: '165 14% 8%',
+        ['--muted' as any]: '240 2% 16%',
+        ['--muted-foreground' as any]: '160 14% 75%',
+        ['--accent' as any]: '240 2% 25%',
+        ['--accent-foreground' as any]: '240 2% 96%',
+        ['--border' as any]: '240 100% 100% / 0.08',
+      }}
+    >
+      <div className="relative z-10">
+        <main className="max-w-[1320px] mx-auto relative">
+          <HeroSection />
+          {/* Dashboard Preview Wrapper with Recreated InterVibe Interview Room */}
+          <div className="absolute bottom-[-460px] sm:bottom-[-520px] md:bottom-[-600px] lg:bottom-[-620px] left-1/2 transform -translate-x-1/2 z-30">
+            <AnimatedSection>
+              <DashboardPreview />
+            </AnimatedSection>
           </div>
-          <span className="font-bold text-xl tracking-tight">InterVibe</span>
-          <Badge variant="outline" className="text-xs px-2 py-0.5 ml-1 border-primary/30 text-primary">
-            v2.0
-          </Badge>
-        </div>
-        
-        <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">
-          <Link href="#features" className="hover:text-foreground transition-colors">Features</Link>
-          <Link href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
-          <Link href="/dashboard/billing" className="hover:text-foreground transition-colors">Pricing</Link>
-        </nav>
+        </main>
 
-        <div className="flex items-center gap-3">
-          <Link href="/auth/login">
-            <Button variant="ghost" size="sm">Sign In</Button>
-          </Link>
-          <Link href="/dashboard/interview">
-            <Button size="sm" className="gap-2">
-              Launch Interview <ArrowRight className="size-4" />
-            </Button>
-          </Link>
-        </div>
-      </header>
+        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto px-6 mt-[540px] sm:mt-[600px] md:mt-[680px] lg:mt-[700px]" delay={0.1}>
+          <SocialProof />
+        </AnimatedSection>
 
-      {/* Hero Section */}
-      <section className="relative px-6 pt-20 pb-24 md:pt-28 md:pb-32 max-w-5xl mx-auto text-center flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-semibold mb-8 animate-fade-in">
-          <Sparkles className="size-3.5" />
-          <span>Real-time Groq Whisper Large v3 &amp; LLaMA 3.3 70B</span>
-        </div>
+        <AnimatedSection id="features-section" className="relative z-10 max-w-[1320px] mx-auto mt-16" delay={0.2}>
+          <BentoSection />
+        </AnimatedSection>
 
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight max-w-4xl leading-[1.1]">
-          Master Your Next Tech Interview with <span className="bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent">Voice AI</span>
-        </h1>
+        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+          <LargeTestimonial />
+        </AnimatedSection>
 
-        <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl font-normal leading-relaxed">
-          Realistic, hands-free verbal technical mock interviews. Upload your resume, paste target job descriptions, and practice speaking naturally with intelligent AI interviewers.
-        </p>
+        <AnimatedSection
+          id="pricing-section"
+          className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16"
+          delay={0.2}
+        >
+          <PricingSection />
+        </AnimatedSection>
 
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <Link href="/dashboard/interview">
-            <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base gap-2 font-semibold shadow-lg shadow-primary/20">
-              <Mic className="size-5" /> Start Practice Interview
-            </Button>
-          </Link>
-          <Link href="/dashboard/overview">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-base font-semibold">
-              View Analytics
-            </Button>
-          </Link>
-        </div>
+        <AnimatedSection
+          id="testimonials-section"
+          className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16"
+          delay={0.2}
+        >
+          <TestimonialGridSection />
+        </AnimatedSection>
 
-        {/* Live Audio Visualizer Banner */}
-        <div className="mt-14 w-full max-w-3xl rounded-2xl border border-border/80 bg-card/60 p-6 shadow-2xl backdrop-blur flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 text-left">
-            <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <AudioWaveform className="size-6 animate-pulse" />
-            </div>
-            <div>
-              <div className="font-semibold text-sm">Autonomous Hands-Free Voice Loop</div>
-              <div className="text-xs text-muted-foreground">Voice Activity Detection automatically catches pauses and responds in milliseconds</div>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="size-2.5 rounded-full bg-emerald-500 animate-ping" />
-            <span className="text-xs font-medium text-emerald-400">Zero Latency Audio</span>
-          </div>
-        </div>
-      </section>
+        <AnimatedSection id="faq-section" className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+          <FAQSection />
+        </AnimatedSection>
 
-      {/* Feature Grid */}
-      <section id="features" className="px-6 py-20 bg-muted/20 border-t border-border/40">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold tracking-tight">Everything You Need to Get Hired</h2>
-            <p className="text-muted-foreground mt-3">Built with modern cloud-edge AI inference and browser-native audio pipelines.</p>
-          </div>
+        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+          <CTASection />
+        </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="border-border/60 bg-card/70">
-              <CardHeader>
-                <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
-                  <FileText className="size-5" />
-                </div>
-                <CardTitle>Resume Memory Parsing</CardTitle>
-                <CardDescription>
-                  Upload your PDF/DOCX resume. The AI extracts up to 10,000 characters to cross-examine specific achievements and previous tech stack choices.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="border-border/60 bg-card/70">
-              <CardHeader>
-                <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
-                  <Bot className="size-5" />
-                </div>
-                <CardTitle>Specialized Interview Personas</CardTitle>
-                <CardDescription>
-                  Choose between Friendly HR Recruiter (Sarah), Strict Engineering Manager (Michael), or UK Technical Lead (Emma) across 4 difficulty tiers.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="border-border/60 bg-card/70">
-              <CardHeader>
-                <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
-                  <Zap className="size-5" />
-                </div>
-                <CardTitle>Blazing Edge Speed</CardTitle>
-                <CardDescription>
-                  Powered by Groq Whisper Large v3 and LLaMA 3.3 70B Versatile, delivering sub-second speech transcription and responsive interview dialogue.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-border/40 py-8 px-6 text-center text-xs text-muted-foreground">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>InterVibe &copy; 2026. All rights reserved. Built for technical interview prep.</div>
-          <div className="flex gap-4">
-            <Link href="/dashboard/interview" className="hover:underline">Interview Room</Link>
-            <Link href="/dashboard/overview" className="hover:underline">Dashboard</Link>
-            <Link href="/dashboard/billing" className="hover:underline">Pricing</Link>
-          </div>
-        </div>
-      </footer>
+        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+          <FooterSection />
+        </AnimatedSection>
+      </div>
     </div>
   );
 }
