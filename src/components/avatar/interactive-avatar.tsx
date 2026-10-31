@@ -96,11 +96,11 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 440;
 
-    // Scene & Camera (Golden-ratio portrait framing matching executive headshot in Image 2)
+    // Scene & Camera (Zoomed-out portrait framing fitting the executive circular viewport)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 100);
-    camera.position.set(0, 1.54, 0.88);
-    camera.lookAt(0, 1.50, 0);
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    camera.position.set(0, 1.48, 1.32);
+    camera.lookAt(0, 1.44, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -206,8 +206,26 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           baseSpineRotX = (spineBone as THREE.Object3D).rotation.x;
         }
 
-        // 1. Natural executive bust shot framing matching video interview webcam (Image 2)
-        // Position camera relative to actual model head position so avatar fills the frame from mid-chest up
+        // 1. Lower arms naturally along torso sides so hands are kept down
+        const isEmma = modelUrl.includes('emma');
+        const armRx = isEmma ? 1.30 : 1.42;
+        const armRz = isEmma ? 0.20 : 0.16;
+
+        if (leftArm) {
+          leftArm.rotation.set(armRx, 0, -armRz);
+        }
+        if (rightArm) {
+          rightArm.rotation.set(armRx, 0, armRz);
+        }
+        if (leftForeArm) {
+          leftForeArm.rotation.set(0, 0, 0);
+        }
+        if (rightForeArm) {
+          rightForeArm.rotation.set(0, 0, 0);
+        }
+
+        // 2. Zoomed-out portrait framing fitting cleanly inside the circular viewport (Image 4)
+        // Position camera relative to actual model head position so avatar head, shoulders, and chest fit comfortably
         let headY = 1.62;
         if (headBone) {
           const worldPos = new THREE.Vector3();
@@ -215,12 +233,12 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           if (worldPos.y > 0) headY = worldPos.y;
         }
 
-        const targetY = headY - 0.12;
-        const camY = headY - 0.08;
-        camera.position.set(0, camY, 0.88);
+        const targetY = headY - 0.22;
+        const camY = headY - 0.18;
+        camera.position.set(0, camY, 1.32);
         camera.lookAt(0, targetY, 0);
 
-        // 2. Reset any erroneous default model weights (e.g., tongueOut)
+        // 3. Reset any erroneous default model weights (e.g., tongueOut)
         setMorph('tongueOut', 0);
         setMorph('mouthOpen', 0);
         setMorph('jawOpen', 0);
@@ -301,10 +319,10 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         const syllable2 = Math.cos(time * 4.5);
         const rawMouth = Math.max(0, syllable1 * 0.7 + syllable2 * 0.3);
 
-        const targetJaw = rawMouth * 0.26;
-        const targetAA = rawMouth * 0.22;
-        const targetO = Math.max(0, Math.sin(time * 5.2)) * 0.16;
-        const targetE = Math.max(0, Math.cos(time * 6.4)) * 0.18;
+        const targetJaw = rawMouth * 0.18;
+        const targetAA = rawMouth * 0.15;
+        const targetO = Math.max(0, Math.sin(time * 5.2)) * 0.12;
+        const targetE = Math.max(0, Math.cos(time * 6.4)) * 0.14;
 
         currentJaw = THREE.MathUtils.lerp(currentJaw, targetJaw, 0.28);
         currentVisemeAA = THREE.MathUtils.lerp(currentVisemeAA, targetAA, 0.28);
