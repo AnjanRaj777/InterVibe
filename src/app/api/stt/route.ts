@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
+
+// SEC-13: Enforce strict 10MB limit on audio payloads
+const MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024;
 
 /**
  * Resamples any PCM WAV buffer to 16000 Hz Mono s16le WAV.
@@ -28,7 +33,9 @@ function resampleWavTo16kMono(buffer: Buffer): Buffer {
     offset += 8 + chunkSize;
   }
 
-  if (fmtOffset === -1 || dataOffset === -1) return buffer;
+  if (fmtOffset === -1 || dataOffset === -1 || fmtOffset + 16 > buffer.length || dataOffset + dataLength > buffer.length) {
+    return buffer;
+  }
 
   const audioFormat = buffer.readUInt16LE(fmtOffset);
   const numChannels = buffer.readUInt16LE(fmtOffset + 2);
@@ -40,13 +47,17 @@ function resampleWavTo16kMono(buffer: Buffer): Buffer {
     return buffer;
   }
 
-  if (audioFormat !== 1 || bitsPerSample !== 16) {
+  if (audioFormat !== 1 || bitsPerSample !== 16 || numChannels === 0 || sampleRate === 0) {
     return buffer;
   }
 
   const totalInputSamples = Math.floor(dataLength / (2 * numChannels));
   const targetSampleRate = 16000;
   const totalOutputSamples = Math.floor(totalInputSamples * (targetSampleRate / sampleRate));
+
+  if (totalOutputSamples <= 0 || totalOutputSamples > 16000 * 300) { // Safety ceiling: 5 min max
+    return buffer;
+  }
 
   const outData = Buffer.alloc(totalOutputSamples * 2);
   for (let i = 0; i < totalOutputSamples; i++) {
@@ -90,11 +101,28 @@ function resampleWavTo16kMono(buffer: Buffer): Buffer {
 
 export async function POST(req: NextRequest) {
   try {
+    // SEC-05: Enforce server-side authentication
+    if (isSupabaseConfigured) {
+      const supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized: Valid session required' }, { status: 401 });
+      }
+    }
+
     const incomingFormData = await req.formData();
     const audioFile = (incomingFormData.get('file') || incomingFormData.get('audio')) as File;
 
     if (!audioFile) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+    }
+
+    // SEC-13: Validate audio payload size limit
+    if (audioFile.size > MAX_AUDIO_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: 'Audio file exceeds maximum allowed limit of 10MB' },
+        { status: 413 }
+      );
     }
 
     const arrayBuffer = await audioFile.arrayBuffer();
@@ -109,7 +137,7 @@ export async function POST(req: NextRequest) {
     const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL_ID || 'muse-voice-transcribe-1.0';
 
     if (!MUSE_API_KEY) {
-      return NextResponse.json({ error: 'MUSE_API_KEY is not configured in .env.local' }, { status: 500 });
+      return NextResponse.json({ error: 'MUSE_API_KEY is not configured on server' }, { status: 500 });
     }
 
     // Meta Muse Voice Transcribe (POST /v1/asr/transcribe)
@@ -149,14 +177,16 @@ export async function POST(req: NextRequest) {
       });
     } else {
       const errText = await metaResponse.text();
+      // SEC-15: Log upstream error details server-side only
       console.error('[STT] Meta Muse Transcribe error:', metaResponse.status, errText);
       return NextResponse.json(
-        { error: `Meta Muse Transcribe failed (HTTP ${metaResponse.status}): ${errText}` },
-        { status: metaResponse.status }
+        { error: 'Speech transcription service failed. Please try speaking again.' },
+        { status: 502 }
       );
     }
   } catch (error: any) {
+    // SEC-15: Log exception server-side, generic client message
     console.error('[STT] Meta Muse STT API Exception:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal speech-to-text processing error' }, { status: 500 });
   }
 }
