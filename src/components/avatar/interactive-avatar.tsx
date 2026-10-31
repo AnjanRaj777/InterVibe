@@ -96,11 +96,11 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 440;
 
-    // Scene & Camera (Golden-ratio portrait framing matching executive headshot)
+    // Scene & Camera (Golden-ratio portrait framing matching executive headshot in Image 2)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
-    camera.position.set(0, 1.65, 1.22);
-    camera.lookAt(0, 1.60, 0);
+    const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 100);
+    camera.position.set(0, 1.54, 0.88);
+    camera.lookAt(0, 1.50, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -135,6 +135,10 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     let rightArm: THREE.Object3D | null = null;
     let leftForeArm: THREE.Object3D | null = null;
     let rightForeArm: THREE.Object3D | null = null;
+    let baseHeadRotX = 0;
+    let baseHeadRotY = 0;
+    let baseHeadRotZ = 0;
+    let baseSpineRotX = 0;
     const morphMeshes: THREE.Mesh[] = [];
 
     // Helper to safely set morph target weight
@@ -147,6 +151,12 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           }
         }
       }
+    };
+
+    const setSmile = (value: number) => {
+      setMorph('mouthSmile', value);
+      setMorph('mouthSmileLeft', value);
+      setMorph('mouthSmileRight', value);
     };
 
     // Load Photorealistic Human 3D Avatar (GLTF/GLB)
@@ -176,33 +186,45 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
             const mesh = child as THREE.Mesh;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
+            // Hide glasses if present so character matches reference portrait
+            if (mesh.name.toLowerCase().includes('glasses')) {
+              mesh.visible = false;
+            }
             if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
               morphMeshes.push(mesh);
             }
           }
         });
 
-        // 1. Lower arms from T-pose to natural resting posture along torso
-        if (leftArm) {
-          leftArm.rotation.set(1.35, 0, -0.05);
+        // Store base rotations to maintain authentic anatomical posture
+        if (headBone) {
+          baseHeadRotX = (headBone as THREE.Object3D).rotation.x;
+          baseHeadRotY = (headBone as THREE.Object3D).rotation.y;
+          baseHeadRotZ = (headBone as THREE.Object3D).rotation.z;
         }
-        if (rightArm) {
-          rightArm.rotation.set(1.35, 0, 0.05);
+        if (spineBone) {
+          baseSpineRotX = (spineBone as THREE.Object3D).rotation.x;
         }
-        if (leftForeArm) {
-          leftForeArm.rotation.set(0.1, 0, 0);
+
+        // 1. Natural executive bust shot framing matching video interview webcam (Image 2)
+        // Position camera relative to actual model head position so avatar fills the frame from mid-chest up
+        let headY = 1.62;
+        if (headBone) {
+          const worldPos = new THREE.Vector3();
+          (headBone as THREE.Object3D).getWorldPosition(worldPos);
+          if (worldPos.y > 0) headY = worldPos.y;
         }
-        if (rightForeArm) {
-          rightForeArm.rotation.set(0.1, 0, 0);
-        }
+
+        const targetY = headY - 0.12;
+        const camY = headY - 0.08;
+        camera.position.set(0, camY, 0.88);
+        camera.lookAt(0, targetY, 0);
 
         // 2. Reset any erroneous default model weights (e.g., tongueOut)
         setMorph('tongueOut', 0);
         setMorph('mouthOpen', 0);
         setMorph('jawOpen', 0);
-        setMorph('mouthSmile', baseSmile);
-        setMorph('mouthSmileLeft', baseSmile);
-        setMorph('mouthSmileRight', baseSmile);
+        setSmile(baseSmile);
 
         scene.add(model);
         setModelLoading(false);
@@ -260,15 +282,15 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
 
       // 1. Subtle natural breathing & posture
       if (spineBone) {
-        spineBone.rotation.x = Math.sin(time * 1.5) * 0.012;
+        spineBone.rotation.x = baseSpineRotX + Math.sin(time * 1.5) * 0.012;
       }
 
       // 2. Smooth Head Tracking & Conversational Sway
       if (headBone) {
         const swayY = Math.sin(time * 1.2) * 0.015;
         const swayX = Math.cos(time * 1.8) * 0.01;
-        headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, targetYaw + swayY, 0.08);
-        headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, -targetPitch + swayX, 0.08);
+        headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, baseHeadRotY + targetYaw + swayY, 0.08);
+        headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, baseHeadRotX - targetPitch + swayX, 0.08);
       }
 
       // 3. Realistic Conversational Speech Lip-Sync (Deepgram Aura Sync)
@@ -294,7 +316,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         setMorph('viseme_aa', currentVisemeAA);
         setMorph('viseme_O', currentVisemeO);
         setMorph('viseme_E', currentVisemeE);
-        setMorph('mouthSmile', 0.22);
+        setSmile(isStrict ? 0.08 : 0.22);
       } else {
         // Smooth transition to relaxed, closed mouth with polite recruiter smile
         currentJaw = THREE.MathUtils.lerp(currentJaw, 0, 0.22);
@@ -307,21 +329,19 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         setMorph('viseme_aa', currentVisemeAA);
         setMorph('viseme_O', currentVisemeO);
         setMorph('viseme_E', currentVisemeE);
-        setMorph('mouthSmile', baseSmile);
-        setMorph('mouthSmileLeft', baseSmile);
-        setMorph('mouthSmileRight', baseSmile);
+        setSmile(baseSmile);
       }
 
       // 4. Attentive Listening Nod when candidate speaks (Spacebar held)
       if (activeState === 'listening' && isRecording) {
         if (headBone) {
           headBone.rotation.x += Math.sin(time * 3.4) * 0.022; // Gentle attentive nod
-          headBone.rotation.z = 0.035; // Slight interested head tilt
+          headBone.rotation.z = baseHeadRotZ + 0.035; // Slight interested head tilt
         }
         setMorph('browInnerUp', 0.18);
       } else {
         if (headBone) {
-          headBone.rotation.z = THREE.MathUtils.lerp(headBone.rotation.z, 0, 0.1);
+          headBone.rotation.z = THREE.MathUtils.lerp(headBone.rotation.z, baseHeadRotZ, 0.1);
         }
         setMorph('browInnerUp', 0);
       }
