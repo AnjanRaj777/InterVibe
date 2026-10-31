@@ -95,11 +95,11 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 440;
 
-    // Scene & Camera (Cinematic 85mm equivalent portrait framing)
+    // Scene & Camera (Zoomed-out portrait framing)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(26, width / height, 0.1, 100);
-    camera.position.set(0, 1.58, 0.44);
-    camera.lookAt(0, 1.575, 0);
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    camera.position.set(0, 1.52, 1.12);
+    camera.lookAt(0, 1.48, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
