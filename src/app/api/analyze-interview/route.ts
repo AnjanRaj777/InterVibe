@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
   try {
+    // SEC-05: Enforce server-side authentication
+    if (isSupabaseConfigured) {
+      const supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized: Valid session required' }, { status: 401 });
+      }
+    }
+
     const { 
       jobRole, 
       jobDescription, 
@@ -15,17 +26,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No interview conversation provided' }, { status: 400 });
     }
 
-    const conversationTranscript = messages
+    // Input bounds: limit message count to prevent token abuse
+    const boundedMessages = messages.slice(-50);
+    const conversationTranscript = boundedMessages
       .filter((m: any) => m.role === 'user' || m.role === 'assistant')
-      .map((m: any) => `${m.role === 'user' ? 'Candidate' : 'Interviewer'}: ${m.text || m.content || ''}`)
-      .join('\n\n');
+      .map((m: any) => `${m.role === 'user' ? 'Candidate' : 'Interviewer'}: ${String(m.text || m.content || '').slice(0, 2000)}`)
+      .join('\n\n')
+      .slice(0, 25000);
 
     const MODEL_API_KEY = process.env.MODEL_API_KEY;
     const META_API_BASE = process.env.META_API_BASE || 'https://api.meta.ai/v1';
     const SPARK_MODEL = process.env.SPARK_MODEL_ID || 'muse-spark-1.3-contributor';
 
     if (!MODEL_API_KEY) {
-      return NextResponse.json({ error: 'MODEL_API_KEY is not configured in .env.local' }, { status: 500 });
+      return NextResponse.json({ error: 'Evaluation model key is not configured on server' }, { status: 500 });
     }
 
     const systemPrompt = `You are an elite Principal Technical Recruiter and Staff Engineering Hiring Manager evaluating an AI mock technical interview.
@@ -44,10 +58,10 @@ The JSON must follow this exact schema:
 }`;
 
     const userPrompt = `### INTERVIEW CONTEXT
-Target Job Role: ${jobRole || 'Senior Software Engineer'}
-Target Job Description: ${jobDescription ? jobDescription.substring(0, 1000) : 'Not specified'}
-Interviewer Persona: ${interviewerVoice || 'Engineering Manager'}
-Interview Duration: ${durationSeconds ? Math.round(durationSeconds) : 0} seconds
+Target Job Role: ${String(jobRole || 'Senior Software Engineer').slice(0, 100)}
+Target Job Description: ${jobDescription ? String(jobDescription).substring(0, 1000) : 'Not specified'}
+Interviewer Persona: ${String(interviewerVoice || 'Engineering Manager').slice(0, 100)}
+Interview Duration: ${typeof durationSeconds === 'number' && durationSeconds > 0 ? Math.round(durationSeconds) : 0} seconds
 
 ### CANDIDATE TRANSCRIPT
 ${conversationTranscript}
@@ -73,10 +87,11 @@ Provide your rigorous, objective evaluation as a raw JSON object.`;
 
     if (!metaRes.ok) {
       const errText = await metaRes.text();
+      // SEC-15: Log upstream error server-side
       console.error('[Analyze] Meta Model API error:', metaRes.status, errText);
       return NextResponse.json(
-        { error: `Meta Model API analysis failed (${metaRes.status}): ${errText}` },
-        { status: metaRes.status }
+        { error: 'Interview evaluation service is temporarily unavailable' },
+        { status: 502 }
       );
     }
 
@@ -124,7 +139,8 @@ Provide your rigorous, objective evaluation as a raw JSON object.`;
     }
 
   } catch (error: any) {
+    // SEC-15: Sanitize error output
     console.error('[Analyze] Server error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal interview analysis error' }, { status: 500 });
   }
 }
