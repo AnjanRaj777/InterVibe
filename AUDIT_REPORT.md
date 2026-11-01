@@ -10,7 +10,7 @@
 ## 1. Executive Summary
 
 - **Server-Side API Route Protection Enforced**: Closed a critical vulnerability where backend AI completion (`/api/chat`), speech-to-text (`/api/stt`), voice synthesis (`/api/tts`), and resume parsing (`/api/extract-resume`) were completely unauthenticated and susceptible to quota drain attacks.
-- **Server Route Middleware & Session Refresh Deployed**: Implemented Next.js edge middleware (`src/middleware.ts`) enforcing authenticated access to all `/dashboard/*` routes and redirecting unauthenticated traffic to `/auth/login`.
+- **Server Route Proxy & Session Refresh Deployed**: Implemented Next.js edge proxy (`src/proxy.ts`) enforcing authenticated access to all `/dashboard/*` routes and redirecting unauthenticated traffic to `/auth/login`.
 - **Open Redirect & Host Header Poisoning Eliminated**: Sanitized OAuth callback redirection (`/auth/callback`) to strictly enforce relative paths and prevent arbitrary external URL redirection.
 - **Unrestricted File Uploads & Memory Exhaustion Mitigated**: Bound resume PDF processing to a strict 5MB ceiling with magic-byte (`%PDF-`) verification, and audio speech processing to 10MB with RIFF boundary safety checks.
 - **Client-Side Privilege Escalation Resolved**: Replaced hardcoded `hasProSubscription: true` in localStorage with authentic database checks against Supabase `public.profiles`.
@@ -22,7 +22,7 @@
 | ID | Severity | Category | File:Line | Issue | Applied Fix | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **SEC-05** | **Critical** | Authorization | `src/app/api/chat/route.ts:3`<br>`src/app/api/tts/route.ts:3`<br>`src/app/api/stt/route.ts:91`<br>`src/app/api/analyze-interview/route.ts:3` | API routes were public, allowing anyone to exhaust paid Meta AI and Deepgram API quotas | Enforced Supabase session cookie validation (`supabase.auth.getUser()`) before execution | **Fixed** |
-| **SEC-06** | **High** | Authorization | `src/middleware.ts:1` (previously absent) | Missing Next.js middleware; dashboard routes relied only on client-side React rendering guards | Added `src/middleware.ts` with Supabase SSR session validation and cookie refresh | **Fixed** |
+| **SEC-06** | **High** | Authorization | `src/proxy.ts:1` (previously absent) | Missing Next.js edge route guard; dashboard routes relied only on client-side React rendering guards | Added `src/proxy.ts` with Supabase SSR session validation and cookie refresh | **Fixed** |
 | **SEC-10** | **High** | SSRF / Redirect | `src/app/auth/callback/route.ts:11` | Open Redirect via unvalidated `?next=` query parameter | Restricted `next` strictly to single-slash relative paths; blocked protocol and scheme injections | **Fixed** |
 | **SEC-11** | **Medium** | Host Poisoning | `src/app/auth/callback/route.ts:40` | Trusted unvalidated `x-forwarded-host` header in OAuth callback | Redirects now strictly resolve against configured `APP_URL` or verified request origin | **Fixed** |
 | **SEC-04** | **High** | Privilege Control | `src/store/auth-store.ts:42, 75, 114` | Hardcoded `hasProSubscription: true` allowed users to bypass paywalls via localStorage | Subscription tier is now fetched and synced directly with Supabase `profiles` table | **Fixed** |
