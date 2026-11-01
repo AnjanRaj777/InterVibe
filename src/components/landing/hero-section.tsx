@@ -1,17 +1,88 @@
-import React from "react"
+"use client"
+
+import React, { useEffect } from "react"
 import { Play } from "lucide-react"
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Header } from "./header"
 import Link from "next/link"
+import { ZOOM } from "./motion-config"
 
 export function HeroSection() {
+  const reduceMotion = useReducedMotion()
+  const { scrollY } = useScroll()
+  const h = ZOOM.hero
+  const g = ZOOM.heroBg
+
+  // Hero "camera dolly": background flies toward the viewer, content recedes.
+  const bgScale = useSpring(useTransform(scrollY, h.range, [1, h.bgScale]), ZOOM.spring)
+  const bgOpacity = useSpring(useTransform(scrollY, h.range, [1, h.bgOpacity]), ZOOM.spring)
+  const contentScale = useSpring(useTransform(scrollY, h.range, [1, h.contentScale]), ZOOM.spring)
+  const contentY = useSpring(useTransform(scrollY, h.range, [0, h.contentY]), ZOOM.spring)
+  const contentOpacity = useSpring(useTransform(scrollY, h.range, [1, 0]), ZOOM.spring)
+
+  // Pointer parallax: grid gently drifts opposite to the cursor.
+  const pointerX = useMotionValue(0)
+  const pointerY = useMotionValue(0)
+  const parallaxX = useSpring(pointerX, { stiffness: 40, damping: 20, mass: 0.6 })
+  const parallaxY = useSpring(pointerY, { stiffness: 40, damping: 20, mass: 0.6 })
+
+  useEffect(() => {
+    if (reduceMotion) return
+    const onMove = (e: PointerEvent) => {
+      const nx = e.clientX / window.innerWidth - 0.5
+      const ny = e.clientY / window.innerHeight - 0.5
+      pointerX.set(-nx * 2 * g.mouseRange)
+      pointerY.set(-ny * 2 * g.mouseRange)
+    }
+    window.addEventListener("pointermove", onMove, { passive: true })
+    return () => window.removeEventListener("pointermove", onMove)
+  }, [reduceMotion, pointerX, pointerY, g.mouseRange])
+
+  const bgStyle = reduceMotion
+    ? undefined
+    : { scale: bgScale, opacity: bgOpacity, willChange: "transform, opacity" }
+  const contentStyle = reduceMotion
+    ? undefined
+    : { scale: contentScale, y: contentY, opacity: contentOpacity, willChange: "transform, opacity" }
+
   return (
     <section
       className="flex flex-col items-center text-center relative mx-auto rounded-2xl overflow-hidden my-6 py-0 px-4
          w-full h-[400px] md:w-[1220px] md:h-[600px] lg:h-[810px] md:px-0"
     >
-      {/* SVG Background */}
-      <div className="absolute inset-0 z-0">
+      {/* SVG Background – layered motion:
+          1) cinematic load zoom-out  2) scroll dolly  3) ambient drift  4) pointer parallax */}
+      <motion.div
+        className="absolute inset-0 z-0"
+        initial={reduceMotion ? false : { scale: g.loadFromScale }}
+        animate={{ scale: 1 }}
+        transition={{ duration: g.loadDuration, ease: g.loadEase }}
+      >
+      <motion.div className="absolute inset-0" style={bgStyle}>
+      <motion.div
+        className="absolute -inset-6"
+        animate={
+          reduceMotion
+            ? undefined
+            : {
+                x: [0, g.driftRange, -g.driftRange * 0.6, 0],
+                y: [0, -g.driftRange * 0.7, g.driftRange * 0.5, 0],
+              }
+        }
+        transition={{ duration: g.driftDuration, ease: "easeInOut", repeat: Infinity }}
+      >
+      <motion.div
+        className="absolute inset-0"
+        style={reduceMotion ? undefined : { x: parallaxX, y: parallaxY, willChange: "transform" }}
+      >
         <svg
           width="100%"
           height="100%"
@@ -431,13 +502,17 @@ export function HeroSection() {
             </clipPath>
           </defs>
         </svg>
-      </div>
+      </motion.div>
+      </motion.div>
+      </motion.div>
+      </motion.div>
 
       {/* Header positioned at top of hero container */}
       <div className="absolute top-0 left-0 right-0 z-20">
         <Header />
       </div>
 
+      <motion.div className="relative z-10 flex flex-col items-center w-full" style={contentStyle}>
       <div className="relative z-10 space-y-4 md:space-y-5 lg:space-y-6 mb-6 md:mb-7 lg:mb-9 max-w-md md:max-w-[640px] lg:max-w-[740px] mt-16 md:mt-[120px] lg:mt-[160px] px-4">
         <h1 className="text-foreground text-3xl md:text-4xl lg:text-6xl font-semibold leading-tight tracking-tight">
           Unleash the Interview That Hires You
@@ -449,7 +524,7 @@ export function HeroSection() {
 
       <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
         <Link href="/auth/signup">
-          <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-7 sm:px-8 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg ring-1 ring-white/10 cursor-pointer">
+          <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-7 sm:px-8 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg ring-1 ring-white/10 cursor-pointer transition-all duration-300 hover:shadow-[0_0_24px_rgba(120,252,214,0.35)] hover:-translate-y-0.5">
             Start Your First Mock - Free
           </Button>
         </Link>
@@ -463,13 +538,14 @@ export function HeroSection() {
         >
           <Button 
             variant="outline" 
-            className="border-white/20 bg-white/5 hover:bg-white/10 text-foreground px-6 sm:px-7 py-3 rounded-full font-medium text-sm sm:text-base backdrop-blur-sm cursor-pointer transition-all flex items-center gap-2"
+            className="border-white/20 bg-white/5 hover:bg-white/10 text-foreground px-6 sm:px-7 py-3 rounded-full font-medium text-sm sm:text-base backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-emerald-300/40 hover:-translate-y-0.5 flex items-center gap-2"
           >
             <Play className="size-3.5 fill-current" />
             <span>Watch 30s Demo</span>
           </Button>
         </a>
       </div>
+      </motion.div>
     </section>
   )
 }

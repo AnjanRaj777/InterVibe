@@ -9,7 +9,8 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { FAQSection } from "@/components/landing/faq-section";
 import { CTASection } from "@/components/landing/cta-section";
 import { FooterSection } from "@/components/landing/footer-section";
-import { AnimatedSection } from "@/components/landing/animated-section";
+import { ZoomSection } from "@/components/landing/zoom-section";
+import { DemoCardEntrance } from "@/components/landing/demo-card-entrance";
 
 export default function LandingPage() {
   return (
@@ -37,44 +38,49 @@ export default function LandingPage() {
           <HeroSection />
           {/* Dashboard Preview Wrapper with Recreated InterVibe Interview Room */}
           <div id="preview-card" className="absolute bottom-[-460px] sm:bottom-[-520px] md:bottom-[-600px] lg:bottom-[-620px] left-1/2 transform -translate-x-1/2 z-30">
-            <AnimatedSection>
+            <DemoCardEntrance>
               <DashboardPreview />
-            </AnimatedSection>
+            </DemoCardEntrance>
           </div>
         </main>
 
-        <AnimatedSection id="meta-ai-models-section" className="relative z-10 max-w-[1320px] mx-auto px-6 mt-[540px] sm:mt-[600px] md:mt-[680px] lg:mt-[700px]" delay={0.1}>
+        <ZoomSection id="meta-ai-models-section" className="relative z-10 max-w-[1320px] mx-auto px-6 mt-[540px] sm:mt-[600px] md:mt-[680px] lg:mt-[700px]">
           <SocialProof />
-        </AnimatedSection>
+        </ZoomSection>
 
-        <AnimatedSection id="features-section" className="relative z-10 max-w-[1320px] mx-auto mt-16" delay={0.2}>
+        <ZoomSection id="features-section" className="relative z-10 max-w-[1320px] mx-auto mt-16">
           <BentoSection />
-        </AnimatedSection>
+        </ZoomSection>
 
-        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+        <ZoomSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16">
           <LargeTestimonial />
-        </AnimatedSection>
+        </ZoomSection>
 
-        <AnimatedSection
+        <ZoomSection
           id="pricing-section"
           className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16"
-          delay={0.2}
         >
           <PricingSection />
-        </AnimatedSection>
+        </ZoomSection>
 
-        <AnimatedSection id="faq-section" className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+        <ZoomSection id="faq-section" className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16">
           <FAQSection />
-        </AnimatedSection>
+        </ZoomSection>
 
-        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+        <ZoomSection settle className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16">
           <CTASection />
-        </AnimatedSection>
+        </ZoomSection>
 
-        <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+        <ZoomSection settle className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16">
           <FooterSection />
-        </AnimatedSection>
+        </ZoomSection>
       </div>
+
+      {/* Faint screen vignette – darkens edges to draw the eye to the center card */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-40 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,0.45)_100%)]"
+      />
     </div>
   );
 }

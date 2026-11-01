@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
+import { STAGE, stageVariants } from './motion-config';
 import { 
   SlidersHorizontal, 
   Share2, 
@@ -41,17 +43,21 @@ export function DashboardPreview() {
 
   return (
     <div className="w-[calc(100vw-32px)] md:w-[1160px] mx-auto">
-      {/* Outer Glow & Elevated Frame from pointer-ai */}
-      <div className="bg-[#78fcd6]/30 dark:bg-[#78fcd6]/20 rounded-2xl p-2 shadow-2xl backdrop-blur-xl ring-1 ring-white/10">
+      {/* Glassmorphism frame with heavy soft emerald-tinted shadow */}
+      <div className="rounded-2xl p-2 border border-white/10 bg-black/40 backdrop-blur-md shadow-2xl shadow-emerald-900/20 ring-1 ring-emerald-400/10">
         
         {/* Main Mock Interview Room Canvas */}
-        <div className="rounded-xl bg-[#090c0a] border border-white/15 overflow-hidden text-left relative shadow-2xl flex flex-col justify-between select-none">
+        <div className="rounded-xl bg-[#090c0a]/90 border border-white/10 overflow-hidden text-left relative shadow-2xl flex flex-col justify-between select-none">
           
           {/* Subtle Grid Pattern inside the room */}
           <div className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-[linear-gradient(to_right,#34d399_1px,transparent_1px),linear-gradient(to_bottom,#34d399_1px,transparent_1px)] bg-[size:32px_32px]" />
 
           {/* TOP SESSION HEADER BAR */}
-          <div className="relative z-10 px-4 md:px-6 py-3 bg-[#0d120f]/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md">
+          <motion.div
+            variants={stageVariants}
+            custom={STAGE.header}
+            className="relative z-10 px-4 md:px-6 py-3 bg-[#0d120f]/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md"
+          >
             
             {/* Left: Role & Recruiter Info */}
             <div className="flex items-center gap-3">
@@ -85,7 +91,7 @@ export function DashboardPreview() {
             <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
               <button 
                 type="button"
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:text-white transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300"
               >
                 <SlidersHorizontal className="size-3 text-neutral-400" />
                 <span>Config</span>
@@ -100,7 +106,7 @@ export function DashboardPreview() {
 
               <button 
                 type="button"
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:text-white transition-colors"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-md border border-white/10 bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300"
               >
                 <Share2 className="size-3 text-neutral-400" />
                 <span>Share</span>
@@ -108,22 +114,26 @@ export function DashboardPreview() {
 
               <button 
                 type="button"
-                className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-600 hover:bg-red-500 text-white font-medium text-xs shadow-xs transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-600 hover:bg-red-500 hover:shadow-[0_0_14px_rgba(239,68,68,0.5)] text-white font-medium text-xs shadow-xs transition-all duration-300"
               >
                 <span className="size-2 rounded-full bg-white animate-pulse" />
                 <span>End Interview</span>
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* TOP CENTER STATUS PILLS */}
-          <div className="relative z-10 pt-4 flex flex-col items-center gap-2">
+          <motion.div
+            variants={stageVariants}
+            custom={STAGE.pills}
+            className="relative z-10 pt-4 flex flex-col items-center gap-2"
+          >
             <div className="inline-flex items-center gap-1 p-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-mono">
               <button
                 type="button"
                 onClick={() => setActiveState('speaking')}
-                className={`px-3 py-0.5 rounded-full transition-colors cursor-pointer ${
-                  activeState === 'speaking' ? 'bg-white/15 text-white font-bold border border-white/20' : 'text-neutral-500 hover:text-white'
+                className={`px-3 py-0.5 rounded-full border transition-all duration-300 cursor-pointer ${
+                  activeState === 'speaking' ? 'bg-white/15 text-white font-bold border-white/20' : 'border-transparent text-neutral-500 hover:text-white hover:bg-white/5'
                 }`}
               >
                 SPEAKING
@@ -131,8 +141,8 @@ export function DashboardPreview() {
               <button
                 type="button"
                 onClick={() => setActiveState('thinking')}
-                className={`px-3 py-0.5 rounded-full transition-colors cursor-pointer ${
-                  activeState === 'thinking' ? 'bg-white/15 text-white font-bold border border-white/20' : 'text-neutral-500 hover:text-white'
+                className={`px-3 py-0.5 rounded-full border transition-all duration-300 cursor-pointer ${
+                  activeState === 'thinking' ? 'bg-white/15 text-white font-bold border-white/20' : 'border-transparent text-neutral-500 hover:text-white hover:bg-white/5'
                 }`}
               >
                 THINKING
@@ -140,8 +150,10 @@ export function DashboardPreview() {
               <button
                 type="button"
                 onClick={() => setActiveState('listening')}
-                className={`px-3 py-0.5 rounded-full transition-colors cursor-pointer ${
-                  activeState === 'listening' ? 'bg-white/15 text-white font-bold border border-white/20' : 'text-neutral-500 hover:text-white'
+                className={`px-3 py-0.5 rounded-full border transition-all duration-300 cursor-pointer ${
+                  activeState === 'listening'
+                    ? 'bg-emerald-500/15 text-emerald-300 font-bold border-emerald-400/40 shadow-[0_0_14px_rgba(16,185,129,0.55)]'
+                    : 'border-transparent text-neutral-500 hover:text-white hover:bg-white/5'
                 }`}
               >
                 LISTENING
@@ -149,19 +161,23 @@ export function DashboardPreview() {
               <button 
                 type="button" 
                 onClick={() => setActiveState('listening')}
-                className="px-1.5 text-neutral-400 hover:text-white cursor-pointer" 
+                className="px-1.5 text-neutral-400 hover:text-white hover:rotate-[-90deg] transition-all duration-300 cursor-pointer" 
                 title="Reset State"
               >
                 <RotateCcw className="size-3" />
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* CENTER 3D AVATAR & TELEMETRY STAGE */}
           <div className="relative z-10 py-2 sm:py-4 px-6 flex flex-col items-center justify-center text-center">
             
             {/* Floating Right Telemetry Widgets (Desktop) */}
-            <div className="hidden lg:flex flex-col gap-3 absolute right-8 top-12 text-left font-mono">
+            <motion.div
+              variants={stageVariants}
+              custom={STAGE.details}
+              className="hidden lg:flex flex-col gap-3 absolute right-8 top-12 text-left font-mono"
+            >
               <div className="p-3 rounded-xl bg-black/60 border border-white/10 backdrop-blur-md space-y-1 w-44">
                 <span className="text-[9px] uppercase tracking-wider text-neutral-500 block">AUDIO</span>
                 <div className="flex items-center justify-between text-xs">
@@ -179,7 +195,7 @@ export function DashboardPreview() {
                   React, Node, System Design — tailored prompts active
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* REAL 3D HUMAN AVATAR ENGINE (Three.js + GLTFLoader with Sarah.glb) */}
             <div className="relative my-1 w-full max-w-xl mx-auto flex flex-col items-center justify-center">
@@ -190,11 +206,12 @@ export function DashboardPreview() {
                 audioPlaying={activeState === 'speaking'}
                 avatarMode={avatarMode}
                 onToggleMode={setAvatarMode}
+                entranceStagger
               />
             </div>
 
             {/* Subtitles & Recruiter Name */}
-            <div className="mt-3 space-y-1">
+            <motion.div variants={stageVariants} custom={STAGE.details} className="mt-3 space-y-1">
               <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono text-emerald-400 tracking-wider font-semibold">
                 <span className={`size-1.5 rounded-full ${
                   activeState === 'speaking' ? 'bg-cyan-400 animate-pulse' :
@@ -211,18 +228,22 @@ export function DashboardPreview() {
               <p className="text-xs font-mono text-neutral-400">
                 Sarah — Friendly HR • 3 yrs at Linear • Latency 320ms • Voice: Muse
               </p>
-            </div>
+            </motion.div>
           </div>
 
           {/* BOTTOM TRANSCRIPT & SUBTITLES */}
-          <div className="relative z-10 border-t border-white/10 bg-[#0c100e]/95 backdrop-blur-md p-4 sm:p-5 space-y-3">
+          <motion.div
+            variants={stageVariants}
+            custom={STAGE.details}
+            className="relative z-10 border-t border-white/10 bg-[#0c100e]/95 backdrop-blur-md p-4 sm:p-5 space-y-3"
+          >
             <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
               <span className="tracking-widest uppercase">
                 TRANSCRIPT • SUBTITLES • AUTO-SCROLL
               </span>
               <div className="flex items-center gap-3">
-                <button type="button" className="hover:text-white transition-colors">Clear</button>
-                <button type="button" className="hover:text-white transition-colors">Copy</button>
+                <button type="button" className="hover:text-white transition-all duration-300">Clear</button>
+                <button type="button" className="hover:text-white transition-all duration-300">Copy</button>
               </div>
             </div>
 
@@ -247,7 +268,7 @@ export function DashboardPreview() {
                 onMouseUp={() => setIsRecording(false)}
                 onTouchStart={() => setIsRecording(true)}
                 onTouchEnd={() => setIsRecording(false)}
-                className={`font-semibold text-xs px-4 py-2 rounded-full flex items-center justify-center gap-2 shadow-sm shrink-0 cursor-pointer transition-colors ${
+                className={`font-semibold text-xs px-4 py-2 rounded-full flex items-center justify-center gap-2 shadow-sm shrink-0 cursor-pointer transition-all duration-300 ${
                   isRecording 
                     ? 'bg-red-500 text-white animate-pulse' 
                     : 'bg-white hover:bg-neutral-200 text-black'
@@ -270,7 +291,7 @@ export function DashboardPreview() {
               {/* Right indicators */}
               <div className="flex items-center justify-end gap-3 text-xs text-neutral-400 shrink-0">
                 <Volume2 className="size-3.5 text-neutral-400" />
-                <button type="button" className="px-3 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs flex items-center gap-1 transition-colors cursor-pointer">
+                <button type="button" className="px-3 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs flex items-center gap-1 transition-all duration-300 cursor-pointer">
                   <span>Send</span>
                   <Send className="size-2.5" />
                 </button>
@@ -282,7 +303,7 @@ export function DashboardPreview() {
               </div>
 
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>

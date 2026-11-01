@@ -34,7 +34,7 @@ export function Header() {
                 key={item.name}
                 href={item.href}
                 onClick={(e) => handleScroll(e, item.href)}
-                className="text-[#888888] hover:text-foreground px-4 py-2 rounded-full font-medium transition-colors text-sm"
+                className="text-[#888888] hover:text-foreground px-4 py-2 rounded-full font-medium transition-all duration-300 text-sm"
               >
                 {item.name}
               </Link>
@@ -44,12 +44,12 @@ export function Header() {
         <div className="flex items-center gap-3">
           <Link 
             href="/auth/login" 
-            className="hidden md:inline-flex items-center text-xs font-mono text-neutral-300 hover:text-white px-3.5 py-2 rounded-full hover:bg-white/5 transition-colors cursor-pointer"
+            className="hidden md:inline-flex items-center text-xs font-mono text-neutral-300 hover:text-white px-3.5 py-2 rounded-full hover:bg-white/5 transition-all duration-300 cursor-pointer"
           >
             Sign In
           </Link>
           <Link href="/auth/signup" className="hidden md:block">
-            <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-6 py-2 rounded-full font-medium shadow-sm cursor-pointer text-xs">
+            <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-6 py-2 rounded-full font-medium shadow-sm cursor-pointer text-xs transition-all duration-300">
               Try for Free
             </Button>
           </Link>

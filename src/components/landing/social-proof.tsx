@@ -1,16 +1,9 @@
-import React from "react";
-import {
-  Bot,
-  Mic,
-  Sparkles,
-  Code2,
-  Layers,
-  Volume2,
-  Zap,
-  Box
-} from "lucide-react";
+"use client";
 
-// Official Meta SVG Path
+import React from "react";
+import { motion } from "framer-motion";
+import { Zap, Box } from "lucide-react";
+
 function MetaIcon({ className = "size-5" }: { className?: string }) {
   return (
     <svg
@@ -26,111 +19,82 @@ function MetaIcon({ className = "size-5" }: { className?: string }) {
   );
 }
 
-const META_MODELS = [
+const MODELS = [
   {
     name: "Meta Muse Spark",
-    version: "1.3",
-    role: "Interviewer LLM Reasoning",
+    tag: "Reasoning",
+    desc: "Live interview intelligence",
     icon: MetaIcon,
-    accent: "group-hover:text-cyan-400 group-hover:border-cyan-500/40",
   },
   {
-    name: "Meta Muse Voice Transcribe 1.0",
-    version: "16kHz STT",
-    role: "Direct Raw PCM Audio",
+    name: "Muse Voice Transcribe",
+    tag: "Audio",
+    desc: "Speech-to-text & speaker detection",
     icon: MetaIcon,
-    accent: "group-hover:text-emerald-400 group-hover:border-emerald-500/40",
-  },
-  {
-    name: "Meta Llama 3.3",
-    version: "70B Instruct",
-    role: "Candidate Rubrics & Scoring",
-    icon: MetaIcon,
-    accent: "group-hover:text-sky-400 group-hover:border-sky-500/40",
-  },
-  {
-    name: "Meta Llama 3.1",
-    version: "405B Engine",
-    role: "Distributed System Design",
-    icon: MetaIcon,
-    accent: "group-hover:text-purple-400 group-hover:border-purple-500/40",
-  },
-  {
-    name: "Meta Code Llama",
-    version: "Specialized",
-    role: "AST Parsing & Complexity",
-    icon: MetaIcon,
-    accent: "group-hover:text-amber-400 group-hover:border-amber-500/40",
-  },
-  {
-    name: "Meta Voicebox",
-    version: "Expressive",
-    role: "Conversational Cadence",
-    icon: MetaIcon,
-    accent: "group-hover:text-teal-400 group-hover:border-teal-500/40",
   },
   {
     name: "Deepgram Aura",
-    version: "Sub-300ms",
-    role: "Low-Latency Neural Voice",
+    tag: "<300ms",
+    desc: "Real-time neural voice",
     icon: Zap,
-    accent: "group-hover:text-red-400 group-hover:border-red-500/40",
   },
   {
     name: "XRSPACE Perxona",
-    version: "60 FPS",
-    role: "3D Blendshapes AI Avatar",
+    tag: "60 FPS",
+    desc: "3D lifelike avatar",
     icon: Box,
-    accent: "group-hover:text-emerald-400 group-hover:border-emerald-500/40",
   },
 ];
 
 export function SocialProof() {
   return (
     <section className="self-stretch py-12 md:py-16 flex flex-col justify-center items-center gap-8 overflow-hidden select-none">
-      {/* Header Label */}
-      <div className="flex flex-col items-center gap-2 text-center max-w-xl mx-auto px-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-neutral-300 text-xs font-mono">
+      {/* Compact Header */}
+      <div className="flex flex-col items-center gap-3 text-center max-w-lg mx-auto px-4">
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs text-emerald-400">
           <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="tracking-wide">AI Foundation Architecture</span>
-        </div>
-        <h2 className="text-sm sm:text-base md:text-lg font-semibold text-white tracking-tight">
-          Trusted & Powered by Meta AI Models
+          POWERED BY
+        </span>
+        <h2 className="text-2xl md:text-3xl font-semibold text-foreground tracking-tight">
+          Built on real-time AI
         </h2>
-        <p className="text-xs text-neutral-400 font-mono">
-          Real-time interview loops powered by Meta Muse, Llama 3.3, and ultra-low latency speech models
-        </p>
       </div>
 
-      {/* 8 Models Grid (2 rows x 4 cols on desktop, 2 cols on mobile) */}
-      <div className="w-full max-w-[1160px] grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 justify-items-stretch px-2 sm:px-4">
-        {META_MODELS.map((model) => {
+      {/* 4 Core Pillars (1 row on desktop, 2x2 on mobile) */}
+      <div className="w-full max-w-[1040px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-2 sm:px-4">
+        {MODELS.map((model, index) => {
           const IconComponent = model.icon;
           return (
-            <div
+            <motion.div
               key={model.name}
-              className={`group relative flex flex-col justify-between p-3.5 sm:p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 ${model.accent} transition-all duration-300 backdrop-blur-md shadow-sm`}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{
+                duration: 0.5,
+                delay: index * 0.1,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="group relative flex flex-col justify-between gap-5 p-5 rounded-2xl border border-white/10 bg-gradient-to-b from-[#141816]/80 to-[#0e1110]/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-[0_0_32px_-10px_rgba(16,185,129,0.3)]"
             >
-              {/* Top row: Brand Icon + Version Pill */}
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-neutral-400 group-hover:text-white transition-colors">
-                  <IconComponent className="size-5 shrink-0" />
+              <div className="flex items-center justify-between gap-2">
+                <div className="grid size-9 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 transition-all duration-300 group-hover:bg-emerald-500/20">
+                  <IconComponent className="size-4 shrink-0" />
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 group-hover:text-neutral-200 transition-colors">
-                  {model.version}
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground group-hover:border-emerald-500/30 group-hover:text-emerald-300 transition-all duration-300">
+                  {model.tag}
                 </span>
               </div>
 
-              {/* Bottom: Model Name + Role Description */}
-              <div className="space-y-0.5 text-left">
-                <h3 className="text-xs sm:text-sm font-semibold text-white tracking-tight group-hover:text-emerald-300 transition-colors truncate">
+              <div className="space-y-1 text-left">
+                <h3 className="text-sm font-semibold text-foreground tracking-tight">
                   {model.name}
                 </h3>
-                <p className="text-[11px] text-neutral-400 font-mono truncate">
-                  {model.role}
+                <p className="text-xs text-muted-foreground">
+                  {model.desc}
                 </p>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

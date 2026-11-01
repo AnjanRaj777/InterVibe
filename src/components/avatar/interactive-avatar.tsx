@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sparkles, Radio, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { STAGE, stageVariants, avatarStageVariants } from '@/components/landing/motion-config';
 
 interface InteractiveAvatarProps {
   persona: {
@@ -19,6 +21,8 @@ interface InteractiveAvatarProps {
   audioPlaying: boolean;
   avatarMode: '3d' | '2d';
   onToggleMode: (mode: '3d' | '2d') => void;
+  /** Join a parent "hidden" -> "visible" staggered entrance (landing demo card) */
+  entranceStagger?: boolean;
 }
 
 export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
@@ -28,6 +32,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
   audioPlaying,
   avatarMode,
   onToggleMode,
+  entranceStagger = false,
 }) => {
   const [perxonaConfig, setPerxonaConfig] = useState<{
     enabled: boolean;
@@ -405,14 +410,18 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
   return (
     <div className="relative flex flex-col items-center justify-center w-full max-w-xl mx-auto">
       {/* Top Floating Controls: 3D vs 2D Mode Switch */}
-      <div className="mb-2 flex items-center gap-2 p-1 rounded-full bg-[#141414] border border-[#262626] shadow-md z-20">
+      <motion.div
+        variants={entranceStagger ? stageVariants : undefined}
+        custom={STAGE.pills}
+        className="mb-2 flex items-center gap-2 p-1 rounded-full bg-[#141414] border border-[#262626] shadow-md z-20"
+      >
         <button
           type="button"
           onClick={() => onToggleMode('3d')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 cursor-pointer ${
             avatarMode === '3d'
               ? 'bg-white text-black font-semibold shadow'
-              : 'text-zinc-400 hover:text-white'
+              : 'text-zinc-400 hover:text-white hover:bg-white/5'
           }`}
         >
           <Sparkles className="w-3 h-3 text-cyan-400" />
@@ -425,18 +434,23 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         <button
           type="button"
           onClick={() => onToggleMode('2d')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-300 cursor-pointer ${
             avatarMode === '2d'
               ? 'bg-white text-black font-semibold shadow'
-              : 'text-zinc-400 hover:text-white'
+              : 'text-zinc-400 hover:text-white hover:bg-white/5'
           }`}
         >
           <Radio className="w-3 h-3 text-zinc-400" />
           <span>2D Minimal</span>
         </button>
-      </div>
+      </motion.div>
 
       {/* 3D HUMAN AVATAR VIEWPORT */}
+      <motion.div
+        variants={entranceStagger ? avatarStageVariants : undefined}
+        custom={STAGE.avatar}
+        className="flex flex-col items-center"
+      >
       {avatarMode === '3d' ? (
         <div className="relative w-[340px] h-[370px] md:w-[440px] md:h-[430px] flex items-center justify-center">
           {perxonaLoaded && perxonaConfig?.enabled ? (
@@ -557,6 +571,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           </div>
         </div>
       )}
+      </motion.div>
 
       {/* Dynamic Equalizer Soundwave Bars (12 bars) */}
       <div className="mt-4 flex items-end gap-[4px] h-[32px]">

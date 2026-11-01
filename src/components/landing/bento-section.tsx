@@ -1,118 +1,134 @@
+"use client"
+
 import type React from "react"
-import CalibrationIllustration from "./bento/calibration-illustration"
-import LiveInterviewIllustration from "./bento/live-interview-illustration"
-import DiagnosticAnalysisIllustration from "./bento/diagnostic-analysis-illustration"
-import ActionableGuidanceIllustration from "./bento/actionable-guidance-illustration"
-import DrillLoopIllustration from "./bento/drill-loop-illustration"
-import ReadinessTelemetryIllustration from "./bento/readiness-telemetry-illustration"
+import { motion } from "framer-motion"
+import { Check, FileText, Mic, TrendingUp } from "lucide-react"
 
-interface BentoCardProps {
-  step: string
-  title: string
-  description: string
-  Component: React.ComponentType
-}
+/* ---------- Tiny visuals (kept intentionally minimal) ---------- */
 
-const BentoCard = ({ step, title, description, Component }: BentoCardProps) => (
-  <div className="overflow-hidden rounded-2xl border border-white/10 hover:border-emerald-500/30 transition-all duration-300 flex flex-col justify-start items-start relative group bg-gradient-to-b from-[#141816]/75 to-[#0e1110]/95 backdrop-blur-md">
-    {/* Background with blur effect */}
-    <div
-      className="absolute inset-0 rounded-2xl"
-      style={{
-        background: "rgba(231, 236, 235, 0.03)",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
-      }}
-    />
-    {/* Subtle emerald gradient on hover */}
-    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
-
-    <div className="self-stretch p-6 pb-2 flex flex-col justify-start items-start gap-2 relative z-10">
-      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] font-semibold tracking-wider uppercase">
-        {step}
-      </div>
-      <div className="self-stretch flex flex-col justify-start items-start gap-1">
-        <h3 className="text-foreground text-lg font-semibold leading-tight tracking-tight">
-          {title}
-        </h3>
-        <p className="text-muted-foreground text-xs leading-relaxed min-h-[36px]">
-          {description}
-        </p>
-      </div>
+const UploadVisual = () => (
+  <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
+    <div className="grid size-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-400">
+      <FileText className="size-4" />
     </div>
-    <div className="self-stretch h-[290px] relative -mt-0.5 z-10 p-4 pt-1">
-      <Component />
+    <div className="flex-1 text-left">
+      <p className="text-sm font-medium text-foreground">resume.pdf</p>
+      <p className="text-[11px] text-muted-foreground">Senior Engineer</p>
+    </div>
+    <div className="grid size-6 place-items-center rounded-full bg-emerald-500 text-black">
+      <Check className="size-3.5" strokeWidth={3} />
     </div>
   </div>
 )
 
-export function BentoSection() {
-  const cards: BentoCardProps[] = [
-    {
-      step: "Step 01 • Calibration",
-      title: "Contextual Resume Ingestion",
-      description: "Upload your CV and target role to dynamically calibrate interview personas and seniority bars.",
-      Component: CalibrationIllustration,
-    },
-    {
-      step: "Step 02 • Simulation",
-      title: "Attend Live Verbal Interviews",
-      description: "Spar in real-time with responsive AI personas using low-latency 16kHz Push-to-Talk audio.",
-      Component: LiveInterviewIllustration,
-    },
-    {
-      step: "Step 03 • Diagnostics",
-      title: "Deep Diagnostic Analysis",
-      description: "Receive instant executive evaluations across technical depth, system design, and communication.",
-      Component: DiagnosticAnalysisIllustration,
-    },
-    {
-      step: "Step 04 • Guidance",
-      title: "Suggestions & Precise Instructions",
-      description: "Review observed strengths, pinpoint blind spots, and follow concrete coaching instructions.",
-      Component: ActionableGuidanceIllustration,
-    },
-    {
-      step: "Step 05 • Drill Loop",
-      title: "The Targeted Drill Loop",
-      description: "Convert flagged weaknesses into second nature through rapid-fire 3-minute scenario drills.",
-      Component: DrillLoopIllustration,
-    },
-    {
-      step: "Step 06 • Mastery",
-      title: "Offer-Ready Velocity Tracking",
-      description: "Track your competency velocity and score trajectory across loops until interview day.",
-      Component: ReadinessTelemetryIllustration,
-    },
-  ]
+const InterviewVisual = () => (
+  <div className="flex h-[60px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-black/40 px-4">
+    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+      <span
+        key={i}
+        className="w-1 rounded-full bg-emerald-400/80"
+        style={{
+          height: 10,
+          animation: `${["wave", "wave2", "wave3"][i % 3]} ${0.9 + (i % 4) * 0.15}s ease-in-out ${i * 0.08}s infinite`,
+        }}
+      />
+    ))}
+  </div>
+)
 
+const ScoreVisual = () => (
+  <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
+    <div className="relative grid size-11 place-items-center">
+      <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90">
+        <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+        <circle
+          cx="18" cy="18" r="15" fill="none" stroke="#34d399" strokeWidth="3"
+          strokeLinecap="round" strokeDasharray="94.2" strokeDashoffset="11.3"
+        />
+      </svg>
+      <span className="text-[11px] font-semibold text-foreground">88</span>
+    </div>
+    <div className="flex-1 space-y-1.5">
+      {[90, 72, 84].map((w, i) => (
+        <div key={i} className="h-1.5 rounded-full bg-white/5">
+          <div className="h-full rounded-full bg-emerald-400/80" style={{ width: `${w}%` }} />
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
+/* ---------- Card ---------- */
+
+interface StepProps {
+  n: string
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  text: string
+  Visual: React.ComponentType
+}
+
+const steps: StepProps[] = [
+  { n: "01", icon: FileText, title: "Upload your resume", text: "Questions tailored to your role.", Visual: UploadVisual },
+  { n: "02", icon: Mic, title: "Interview by voice", text: "Talk to a realistic AI interviewer.", Visual: InterviewVisual },
+  { n: "03", icon: TrendingUp, title: "Get scored & improve", text: "See what to fix. Drill it. Repeat.", Visual: ScoreVisual },
+]
+
+const StepCard = ({ n, icon: Icon, title, text, Visual, index }: StepProps & { index: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 24 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.4 }}
+    transition={{ duration: 0.6, delay: index * 0.12, ease: [0.22, 1, 0.36, 1] }}
+    className="group relative flex flex-col gap-6 rounded-2xl border border-white/10 bg-gradient-to-b from-[#141816]/80 to-[#0e1110]/95 p-6
+      backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-[0_0_40px_-12px_rgba(16,185,129,0.35)]"
+  >
+    <div className="flex items-center justify-between">
+      <div className="grid size-10 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 transition-all duration-300 group-hover:bg-emerald-500/20">
+        <Icon className="size-5" />
+      </div>
+      <span className="font-mono text-sm text-white/20 transition-all duration-300 group-hover:text-emerald-400/60">{n}</span>
+    </div>
+
+    <div className="space-y-1.5 text-left">
+      <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
+      <p className="text-sm text-muted-foreground">{text}</p>
+    </div>
+
+    <Visual />
+  </motion.div>
+)
+
+/* ---------- Section ---------- */
+
+export function BentoSection() {
   return (
-    <section className="w-full px-5 flex flex-col justify-center items-center overflow-visible bg-transparent">
-      <div className="w-full py-8 md:py-16 relative flex flex-col justify-start items-start gap-6">
-        {/* Ambient background light */}
-        <div className="w-[547px] h-[938px] absolute top-[614px] left-[80px] origin-top-left rotate-[-33.39deg] bg-primary/10 blur-[130px] z-0" />
-        
-        {/* Section Header */}
-        <div className="self-stretch py-8 md:py-14 flex flex-col justify-center items-center gap-2 z-10">
-          <div className="flex flex-col justify-start items-center gap-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-xs font-medium">
-              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              PROVEN PREPARATION PIPELINE
-            </div>
-            <h2 className="w-full max-w-[760px] text-center text-foreground text-4xl md:text-6xl font-semibold leading-tight md:leading-[66px] tracking-tight">
-              The Complete Interview Mastery Loop
-            </h2>
-            <p className="w-full max-w-[680px] text-center text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">
-              From contextual resume calibration to live verbal sparring, instant diagnostics, and targeted scenario drills — engineered to turn preparation into offers.
-            </p>
-          </div>
+    <section className="w-full px-5 flex flex-col items-center bg-transparent">
+      <div className="relative w-full max-w-[1100px] py-16 md:py-24 flex flex-col items-center gap-12 md:gap-16">
+        {/* Ambient light */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -z-0 h-[420px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[120px]" />
+
+        {/* Header */}
+        <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 font-mono text-xs text-emerald-400">
+            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            HOW IT WORKS
+          </span>
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
+            Three steps to offer-ready
+          </h2>
+          <p className="text-base md:text-lg text-muted-foreground">Upload. Practice. Improve.</p>
         </div>
 
-        {/* 3x2 Bento Cards Grid */}
-        <div className="self-stretch grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 z-10">
-          {cards.map((card) => (
-            <BentoCard key={card.step} {...card} />
-          ))}
+        {/* Steps */}
+        <div className="relative z-10 w-full">
+          {/* Connector line (desktop) */}
+          <div className="pointer-events-none absolute left-[16%] right-[16%] top-[44px] hidden h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent md:block" />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {steps.map((s, i) => (
+              <StepCard key={s.n} {...s} index={i} />
+            ))}
+          </div>
         </div>
       </div>
     </section>
