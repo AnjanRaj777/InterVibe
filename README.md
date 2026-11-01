@@ -267,14 +267,6 @@ InterVibe features 10 fully customized design themes accessible from the Profile
 | :--- | :--- | :--- |
 | **▲ Vercel** | `vercel` | Ultra-clean minimalist monochrome with sharp borders and subtle gray accents |
 | **⚡ Supabase** | `supabase` | High-contrast dark charcoal with radiant emerald green (`#3ECF8E`) accents |
-| ** Claude** | `claude` | Warm terracotta, soft amber, and natural parchment aesthetic inspired by Anthropic |
-| **🧘 Zen** | `zen` | Calming slate, soft sage, and muted teal tones designed to reduce interview anxiety |
-| **⬛ Mono** | `mono` | High-contrast brutalist pure black and stark white styling |
-| **💬 WhatsApp** | `whatsapp` | Rich chat-focused emerald headers, subtle message bubble contrasts, and clean borders |
-| **🚀 Astro Vista**| `astro-vista` | Galactic deep space aesthetic with neon purple and cosmic cyan highlights |
-| **🌿 Light Green**| `light-green`| Fresh botanical mint and soft sage palette with organic contrast |
-| **📐 Neobrutalism**| `neobrutualism`| Bold pop borders, vibrant retro cards, and expressive hard drop-shadows |
-| **📝 Notebook** | `notebook` | Ruled paper background, warm sepia tones, and academic notebook styling |
 
 ---
 
@@ -523,6 +515,7 @@ This project was built for the **Meta AI Developer Hackathon**, highlighting the
 
 ---
 
-## 📄 License
+## 📄 License & Legal Terms
 
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+- **Open-Source Code License**: Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+- **Terms of Service & Privacy Policy**: See [`TERMS_AND_PRIVACY.md`](TERMS_AND_PRIVACY.md) for comprehensive subscription details, limits, acceptable use guidelines, refund terms, and GDPR privacy policy.
