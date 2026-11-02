@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import OverviewPage from './overview/page';
 
 export default function DashboardPage() {
-  redirect('/dashboard/overview');
+  return <OverviewPage />;
 }

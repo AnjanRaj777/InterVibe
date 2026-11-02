@@ -1,26 +1,91 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuthStore, type SavedAccount } from '@/store/auth-store';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ArrowRight, Eye, EyeOff, ChevronLeft } from 'lucide-react';
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  RefreshCw,
+  UserPlus,
+  X,
+  Loader2,
+} from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const {
+    user,
+    isAuthenticated,
+    savedAccounts = [],
+    login,
+    switchToAccount,
+    removeSavedAccount,
+    prepareAccountSwitch,
+  } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [switchingEmail, setSwitchingEmail] = useState<string | null>(null);
+  const [useAnotherAccount, setUseAnotherAccount] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [showResendOption, setShowResendOption] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Sync any active browser session into savedAccounts on mount
+  useEffect(() => {
+    prepareAccountSwitch();
+  }, [prepareAccountSwitch]);
+
+  const showChooser = savedAccounts.length > 0 && !useAnotherAccount;
+
+  const handleSelectSavedAccount = async (account: SavedAccount) => {
+    setSwitchingEmail(account.email);
+    try {
+      const status = await switchToAccount(account.email);
+      if (status === 'restored') {
+        toast.success(`Signed in as ${account.name}`);
+        router.push('/dashboard/interview');
+        return;
+      }
+
+      // Session was signed out or expired — fallback based on provider
+      if (account.provider === 'google' || account.provider === 'github') {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: account.provider,
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/interview`,
+            queryParams: {
+              login_hint: account.email,
+              prompt: 'select_account',
+            },
+          },
+        });
+        if (error) throw error;
+      } else {
+        setEmail(account.email);
+        setUseAnotherAccount(true);
+        toast.info(`Enter password for ${account.email}`);
+        setTimeout(() => passwordInputRef.current?.focus(), 80);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Could not switch account');
+    } finally {
+      setSwitchingEmail(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,9 +104,51 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       router.push('/dashboard/interview');
     } catch (err: any) {
-      toast.error(err.message || 'Invalid email or password');
+      const msg = err?.message || 'Invalid email or password';
+      const lower = msg.toLowerCase();
+      if (lower.includes('email not confirmed')) {
+        setShowResendOption(true);
+        toast.error('Email not verified yet', {
+          description: 'Please click the confirmation link sent to your inbox, or resend it below.',
+          duration: 6000,
+        });
+      } else if (lower.includes('invalid login credentials')) {
+        setShowResendOption(true);
+        toast.error('Invalid login credentials', {
+          description:
+            'Check your password, verify your confirmation email if you just signed up, or sign in with Google/GitHub if you registered via OAuth.',
+          duration: 6000,
+        });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email.trim()) {
+      toast.error('Enter your email address first');
+      return;
+    }
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/interview`,
+        },
+      });
+      if (error) throw error;
+      toast.success('Verification email sent!', {
+        description: `Check your inbox (and spam folder) at ${email.trim()}.`,
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to resend verification email');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -52,6 +159,9 @@ export default function LoginPage() {
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/interview`,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
       if (error) throw error;
@@ -88,9 +198,11 @@ export default function LoginPage() {
       {/* Minimal Top Bar */}
       <header className="relative z-10 w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="size-7 rounded-lg bg-emerald-500 text-black font-mono font-bold text-xs grid place-items-center shadow-sm group-hover:scale-105 transition-transform">
-            IV
-          </div>
+          <img
+            src="/logo.png"
+            alt="InterVibe Logo"
+            className="size-8 object-contain group-hover:scale-105 transition-transform"
+          />
           <span className="font-semibold text-base tracking-tight text-white">InterVibe</span>
         </Link>
 
@@ -109,126 +221,267 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-[400px] rounded-2xl border border-white/10 bg-[#0d120f]/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-emerald-950/30"
+          className="w-full max-w-[410px] rounded-2xl border border-white/10 bg-[#0d120f]/85 backdrop-blur-xl p-7 sm:p-8 shadow-2xl shadow-emerald-950/30"
         >
-          <div className="space-y-1 text-center mb-6">
-            <h1 className="text-2xl font-semibold text-white tracking-tight">
-              Welcome back
-            </h1>
-            <p className="text-xs text-neutral-400">
-              Sign in to continue to InterVibe
-            </p>
-          </div>
+          {showChooser ? (
+            /* SAVED & LOGGED-IN ACCOUNT CHOOSER */
+            <div className="space-y-5">
+              <div className="space-y-1 text-center">
+                <h1 className="text-2xl font-semibold text-white tracking-tight">
+                  Choose an account
+                </h1>
+                <p className="text-xs text-neutral-400">
+                  Select an account to continue to InterVibe
+                </p>
+              </div>
 
-          {/* OAuth Buttons */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleOAuthLogin('github')}
-              disabled={oauthLoading !== null}
-              className="flex items-center justify-center gap-2 h-10 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-xs font-medium transition-all duration-200 cursor-pointer disabled:opacity-50"
-            >
-              <svg className="size-4 fill-current" viewBox="0 0 24 24">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-              </svg>
-              <span>{oauthLoading === 'github' ? 'Connecting...' : 'GitHub'}</span>
-            </button>
+              <div className="space-y-2 max-h-[260px] overflow-y-auto pr-0.5">
+                {savedAccounts.map((acc) => {
+                  const isCurrentActive =
+                    isAuthenticated &&
+                    user?.email?.toLowerCase() === acc.email.toLowerCase();
+                  const hasInstantSession =
+                    isCurrentActive || Boolean(acc.accessToken && acc.refreshToken);
+                  const isSwitching = switchingEmail === acc.email;
 
-            <button
-              type="button"
-              onClick={() => handleOAuthLogin('google')}
-              disabled={oauthLoading !== null}
-              className="flex items-center justify-center gap-2 h-10 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-xs font-medium transition-all duration-200 cursor-pointer disabled:opacity-50"
-            >
-              <svg className="size-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.25 21.36 7.34 24 12 24z" />
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
-              </svg>
-              <span>{oauthLoading === 'google' ? 'Connecting...' : 'Google'}</span>
-            </button>
-          </div>
+                  return (
+                    <div
+                      key={acc.email}
+                      onClick={() => !isSwitching && handleSelectSavedAccount(acc)}
+                      className="group relative flex items-center justify-between gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-emerald-500/40 transition-all duration-200 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {acc.avatarUrl ? (
+                          <img
+                            src={acc.avatarUrl}
+                            alt={acc.name}
+                            className="size-10 rounded-full object-cover border border-white/15 shrink-0"
+                          />
+                        ) : (
+                          <div className="size-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-bold text-sm grid place-items-center shrink-0">
+                            {(acc.name || acc.email || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
 
-          {/* Divider */}
-          <div className="relative flex items-center justify-center my-5">
-            <div className="border-t border-white/10 w-full" />
-            <span className="bg-[#0d120f] px-3 text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-              or
-            </span>
-            <div className="border-t border-white/10 w-full" />
-          </div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-white truncate">
+                              {acc.name}
+                            </p>
+                            {isCurrentActive ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 shrink-0">
+                                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                Active
+                              </span>
+                            ) : hasInstantSession ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-neutral-300 shrink-0">
+                                Signed in
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 text-[10px] font-mono text-neutral-500 shrink-0">
+                                Signed out
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-400 font-mono truncate">
+                            {acc.email}
+                          </p>
+                        </div>
+                      </div>
 
-          {/* Email / Password Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs text-neutral-300">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-black/40 border-white/10 focus:border-emerald-500/60 text-white text-sm h-10 rounded-xl"
-                required
-              />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isSwitching ? (
+                          <Loader2 className="size-4 text-emerald-400 animate-spin" />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSavedAccount(acc.email);
+                              toast.info(`Removed ${acc.email} from saved accounts`);
+                            }}
+                            title="Remove account from this device"
+                            className="p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('');
+                  setPassword('');
+                  setUseAnotherAccount(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20 text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer"
+              >
+                <UserPlus className="size-3.5 text-emerald-400" />
+                <span>Use another account</span>
+              </button>
+
+              <p className="text-center text-xs text-neutral-400 pt-1">
+                No account?{' '}
+                <Link
+                  href="/auth/signup"
+                  className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                >
+                  Sign up
+                </Link>
+              </p>
             </div>
+          ) : (
+            /* STANDARD OAUTH + EMAIL/PASSWORD SIGN IN FORM */
+            <>
+              <div className="space-y-1 text-center mb-6">
+                <h1 className="text-2xl font-semibold text-white tracking-tight">
+                  Welcome back
+                </h1>
+                <p className="text-xs text-neutral-400">
+                  Sign in to continue to InterVibe
+                </p>
+              </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-xs text-neutral-300">
-                  Password
-                </Label>
+              {savedAccounts.length > 0 && (
                 <button
                   type="button"
-                  onClick={handleForgotPassword}
-                  className="text-[11px] text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                  onClick={() => setUseAnotherAccount(false)}
+                  className="mb-4 w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/15 text-xs font-medium transition-colors cursor-pointer"
                 >
-                  Forgot?
+                  <ChevronLeft className="size-3.5" />
+                  <span>Back to logged-in accounts ({savedAccounts.length})</span>
                 </button>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-black/40 border-white/10 focus:border-emerald-500/60 text-white text-sm h-10 rounded-xl pr-9"
-                  required
-                />
+              )}
+
+              {/* OAuth Buttons */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                  onClick={() => handleOAuthLogin('github')}
+                  disabled={oauthLoading !== null}
+                  className="flex items-center justify-center gap-2 h-10 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-xs font-medium transition-all duration-200 cursor-pointer disabled:opacity-50"
                 >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  <svg className="size-4 fill-current" viewBox="0 0 24 24">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                  </svg>
+                  <span>{oauthLoading === 'github' ? 'Connecting...' : 'GitHub'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleOAuthLogin('google')}
+                  disabled={oauthLoading !== null}
+                  className="flex items-center justify-center gap-2 h-10 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white text-xs font-medium transition-all duration-200 cursor-pointer disabled:opacity-50"
+                >
+                  <svg className="size-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.25 21.36 7.34 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                  </svg>
+                  <span>{oauthLoading === 'google' ? 'Connecting...' : 'Google'}</span>
                 </button>
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer mt-2"
-            >
-              <span>{loading ? 'Signing in...' : 'Sign In'}</span>
-              <ArrowRight className="size-4" />
-            </Button>
-          </form>
+              {/* Divider */}
+              <div className="relative flex items-center justify-center my-5">
+                <div className="border-t border-white/10 w-full" />
+                <span className="bg-[#0d120f] px-3 text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                  or
+                </span>
+                <div className="border-t border-white/10 w-full" />
+              </div>
 
-          {/* Switcher */}
-          <p className="mt-6 text-center text-xs text-neutral-400">
-            No account?{' '}
-            <Link
-              href="/auth/signup"
-              className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
-            >
-              Sign up
-            </Link>
-          </p>
+              {/* Email / Password Form */}
+              <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs text-neutral-300">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-black/40 border-white/10 focus:border-emerald-500/60 text-white text-sm h-10 rounded-xl"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-xs text-neutral-300">
+                      Password
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-[11px] text-neutral-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                    >
+                      Forgot?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      ref={passwordInputRef}
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="bg-black/40 border-white/10 focus:border-emerald-500/60 text-white text-sm h-10 rounded-xl pr-9"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                >
+                  <span>{loading ? 'Signing in...' : 'Sign In'}</span>
+                  <ArrowRight className="size-4" />
+                </Button>
+
+                {showResendOption && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="w-full mt-2 py-2 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className={`size-3.5 ${resending ? 'animate-spin' : ''}`} />
+                    <span>{resending ? 'Sending verification link...' : 'Resend verification email'}</span>
+                  </button>
+                )}
+              </form>
+
+              {/* Switcher */}
+              <p className="mt-6 text-center text-xs text-neutral-400">
+                No account?{' '}
+                <Link
+                  href="/auth/signup"
+                  className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                >
+                  Sign up
+                </Link>
+              </p>
+            </>
+          )}
         </motion.div>
       </main>
 

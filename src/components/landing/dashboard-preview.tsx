@@ -275,7 +275,7 @@ export function DashboardPreview() {
                 }`}
               >
                 <span className={`size-2 rounded-full ${isRecording ? 'bg-white' : 'bg-emerald-500 animate-pulse'}`} />
-                <span className="font-bold">{isRecording ? 'Recording (Release to Send)' : 'Tap to Speak'}</span>
+                <span className="font-bold">{isRecording ? 'Recording (Release to Send)' : 'Hold to Speak'}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
                   isRecording ? 'bg-red-700 text-white' : 'bg-neutral-200 text-black'
                 }`}>

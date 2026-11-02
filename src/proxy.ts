@@ -8,6 +8,20 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.searchParams;
+
+  // If Supabase email confirmation or OAuth falls back to the root Site URL (/?code=... or /?token_hash=...),
+  // forward the request to /auth/callback so the session is exchanged properly.
+  if (
+    pathname === '/' &&
+    (searchParams.has('code') || (searchParams.has('token_hash') && searchParams.has('type')))
+  ) {
+    const callbackUrl = new URL('/auth/callback', request.url);
+    searchParams.forEach((val, key) => callbackUrl.searchParams.set(key, val));
+    return NextResponse.redirect(callbackUrl);
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -34,21 +48,33 @@ export async function proxy(request: NextRequest) {
   });
 
   // Refresh auth session
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Protect all /dashboard routes server-side
   if (pathname.startsWith('/dashboard')) {
     if (!user) {
       const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('next', pathname);
+      loginUrl.searchParams.set('next', pathname === '/dashboard' ? '/dashboard/overview' : pathname);
       return NextResponse.redirect(loginUrl);
+    }
+    if (pathname === '/dashboard') {
+      return NextResponse.redirect(new URL('/dashboard/overview', request.url));
     }
   }
 
   // If user is already authenticated, redirect away from login/signup to dashboard
-  if (user && (pathname === '/auth/login' || pathname === '/auth/signup' || pathname === '/login' || pathname === '/signup')) {
+  // unless they explicitly opened the account switcher (?switch=1)
+  const isSwitchingAccount = searchParams.get('switch') === '1';
+  if (
+    user &&
+    !isSwitchingAccount &&
+    (pathname === '/auth/login' ||
+      pathname === '/auth/signup' ||
+      pathname === '/login' ||
+      pathname === '/signup')
+  ) {
     return NextResponse.redirect(new URL('/dashboard/interview', request.url));
   }
 

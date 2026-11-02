@@ -114,22 +114,29 @@ function float32To16kMonoWav(samples: Float32Array, sampleRate: number): Blob {
 }
 
 export default function InterviewPage() {
-  const { user } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
   // Step navigation: 'upload' -> 'configure' -> 'interview'
   const [step, setStep] = useState<'upload' | 'configure' | 'interview'>('upload');
-  const [resumeText, setResumeText] = useState("");
-  const [resumeFilename, setResumeFilename] = useState("");
+  const [resumeText, setResumeText] = useState(user?.resumeText || "");
+  const [resumeFilename, setResumeFilename] = useState(user?.resumeName || "");
   
   // Configuration State
-  const [jobRole, setJobRole] = useState("Senior Full Stack Developer");
+  const [jobRole, setJobRole] = useState(user?.targetRole || "Senior Full Stack Developer");
   const [jobDescription, setJobDescription] = useState("Looking for an experienced engineer proficient in Next.js, React, Node.js, distributed system design, API optimization, and real-time architectures.");
   const [interviewFocus, setInterviewFocus] = useState("Mixed");
   const [difficultyLevel, setDifficultyLevel] = useState("Mid-Level");
-  const [interviewerVoice, setInterviewerVoice] = useState("Sarah - Friendly HR");
+  const [interviewerVoice, setInterviewerVoice] = useState(user?.defaultPersona || "Sarah - Friendly HR");
   const [interviewLength, setInterviewLength] = useState("Standard");
+
+  useEffect(() => {
+    if (user?.targetRole) setJobRole(user.targetRole);
+    if (user?.defaultPersona) setInterviewerVoice(user.defaultPersona);
+    if (user?.resumeText && !resumeText) setResumeText(user.resumeText);
+    if (user?.resumeName && !resumeFilename) setResumeFilename(user.resumeName);
+  }, [user?.email, user?.targetRole, user?.defaultPersona, user?.resumeName]);
 
   // Chat & Conversation State
   const [messages, setMessages] = useState<{ id: string; time: string; role: 'system' | 'user' | 'assistant'; speaker: string; label: string; text: string }[]>([]);
@@ -345,6 +352,11 @@ export default function InterviewPage() {
       toast.success(`Resume parsed successfully! Extracted ${data.text.length} characters.`);
       setResumeText(data.text);
       setResumeFilename(file.name);
+      updateProfile({
+        resumeName: file.name,
+        resumeText: data.text,
+        resumeCharCount: data.text.length,
+      });
       setStep('configure');
       stepRef.current = 'configure';
     } catch (error: any) {
@@ -1357,20 +1369,36 @@ ${resumeText.substring(0, 10000)}
                 {/* BOTTOM CONTROLS BAR (PUSH-TO-TALK & INPUT) */}
                 <div className="px-3 md:px-4 py-3 bg-[#0c0c0c] border-t border-[#1a1a1a] flex items-center gap-2 md:gap-3">
                   
-                  {/* Push-to-Talk Button */}
+                  {/* Push-to-Talk Button (Hold Space or Hold Pointer to Speak) */}
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!isProcessingAudio && !isPlaying) {
-                        if (!isRecording) startRecording();
-                        else stopRecording(false);
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      if (!isProcessingAudio && !isPlaying && !isRecording) {
+                        startRecording();
                       }
                     }}
-                    onMouseDown={() => {
-                      if (!isProcessingAudio && !isPlaying) startRecording();
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      if (isRecording) {
+                        stopRecording(false);
+                      }
                     }}
-                    onMouseUp={() => {
-                      if (isRecording) stopRecording(false);
+                    onPointerLeave={() => {
+                      if (isRecording) {
+                        stopRecording(false);
+                      }
+                    }}
+                    onPointerCancel={() => {
+                      if (isRecording) {
+                        stopRecording(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.code === 'Space') e.preventDefault();
+                    }}
+                    onKeyUp={(e) => {
+                      if (e.code === 'Space') e.preventDefault();
                     }}
                     disabled={isProcessingAudio || isPlaying}
                     className={`h-10 md:h-11 px-4 md:px-5 rounded-full text-[12.5px] md:text-[13px] font-medium flex items-center gap-2 transition shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset] cursor-pointer select-none ${
@@ -1386,10 +1414,10 @@ ${resumeText.substring(0, 10000)}
                       </svg>
                     </span>
                     <span className="hidden md:inline">
-                      {isRecording ? "Release to Send" : "Tap to Speak"}
+                      {isRecording ? "Release to Send" : "Hold to Speak"}
                     </span>
                     <span className="md:hidden">
-                      {isRecording ? "Release" : "Speak"}
+                      {isRecording ? "Release" : "Hold"}
                     </span>
                     <span className="hidden md:inline-flex ml-1 h-5 px-1.5 rounded bg-black/10 font-mono text-[10px] items-center">
                       SPACE

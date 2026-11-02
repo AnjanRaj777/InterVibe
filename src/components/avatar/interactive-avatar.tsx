@@ -45,6 +45,19 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const presenterRef = useRef<any>(null);
 
+  // Live state ref so Three.js animation loop reads current state at 60fps
+  // without re-initializing the WebGL canvas or reloading the GLB model.
+  const liveStateRef = useRef({
+    activeState,
+    isRecording,
+    audioPlaying,
+  });
+  liveStateRef.current = {
+    activeState,
+    isRecording,
+    audioPlaying,
+  };
+
   // 1. Check Perxona Connect configuration on mount
   useEffect(() => {
     let isMounted = true;
@@ -104,7 +117,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     // Scene & Camera (Reference framing with generous headroom so character head never clips)
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 100);
-    camera.position.set(0, 1.60, 1.15);
+    camera.position.set(0, 1.6, 1.15);
     camera.lookAt(0, 1.56, 0);
 
     // High-performance WebGL Renderer with ACES Tone Mapping
@@ -140,9 +153,13 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     let rightArm: THREE.Object3D | null = null;
     let leftForeArm: THREE.Object3D | null = null;
     let rightForeArm: THREE.Object3D | null = null;
+    let leftHand: THREE.Object3D | null = null;
+    let rightHand: THREE.Object3D | null = null;
     let baseHeadRotX = 0;
     let baseHeadRotY = 0;
     let baseHeadRotZ = 0;
+    let baseNeckRotX = 0;
+    let baseNeckRotY = 0;
     let baseSpineRotX = 0;
     const morphMeshes: THREE.Mesh[] = [];
 
@@ -169,7 +186,10 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const loader = new GLTFLoader();
     const modelUrl = persona.model || '/avatars/sarah.glb';
     const isStrict = persona.name.toLowerCase().includes('michael');
-    const baseSmile = isStrict ? 0.05 : 0.18;
+    const baseSmile = isStrict ? 0.05 : 0.16;
+    const isEmma = modelUrl.includes('emma');
+    const baseArmRx = isEmma ? 1.3 : 1.38;
+    const baseArmRz = isEmma ? 0.2 : 0.16;
 
     loader.load(
       modelUrl,
@@ -186,6 +206,16 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
             if (child.name === 'RightArm') rightArm = child;
             if (child.name === 'LeftForeArm') leftForeArm = child;
             if (child.name === 'RightForeArm') rightForeArm = child;
+            if (child.name === 'LeftHand') leftHand = child;
+            if (child.name === 'RightHand') rightHand = child;
+
+            // Give fingers a natural relaxed anatomical curl instead of stiff T-pose fingers
+            if (/LeftHand(Index|Middle|Ring|Pinky)[123]/.test(child.name)) {
+              child.rotation.x = 0.22;
+            }
+            if (/RightHand(Index|Middle|Ring|Pinky)[123]/.test(child.name)) {
+              child.rotation.x = 0.22;
+            }
           }
           if ((child as any).isMesh) {
             const mesh = child as THREE.Mesh;
@@ -207,31 +237,29 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
           baseHeadRotY = (headBone as THREE.Object3D).rotation.y;
           baseHeadRotZ = (headBone as THREE.Object3D).rotation.z;
         }
+        if (neckBone) {
+          baseNeckRotX = (neckBone as THREE.Object3D).rotation.x;
+          baseNeckRotY = (neckBone as THREE.Object3D).rotation.y;
+        }
         if (spineBone) {
           baseSpineRotX = (spineBone as THREE.Object3D).rotation.x;
         }
 
-        // 1. Lower arms naturally along torso sides so hands are kept down
-        const isEmma = modelUrl.includes('emma');
-        const armRx = isEmma ? 1.30 : 1.42;
-        const armRz = isEmma ? 0.20 : 0.16;
-
+        // 1. Lower arms naturally along torso sides
         if (leftArm) {
-          leftArm.rotation.set(armRx, 0, -armRz);
+          leftArm.rotation.set(baseArmRx, 0, -baseArmRz);
         }
         if (rightArm) {
-          rightArm.rotation.set(armRx, 0, armRz);
+          rightArm.rotation.set(baseArmRx, 0, baseArmRz);
         }
         if (leftForeArm) {
-          leftForeArm.rotation.set(0, 0, 0);
+          leftForeArm.rotation.set(0.12, 0, 0.18);
         }
         if (rightForeArm) {
-          rightForeArm.rotation.set(0, 0, 0);
+          rightForeArm.rotation.set(0.12, 0, -0.18);
         }
 
         // 2. Reference portrait positioning
-        // Moves the character bit more down so the head has ample headroom (~30%)
-        // and never clips out of the top of the viewport
         let headY = 1.62;
         if (headBone) {
           const worldPos = new THREE.Vector3();
@@ -260,15 +288,15 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       }
     );
 
-    // Interactive Mouse Look-At Tracking
-    let targetYaw = 0;
-    let targetPitch = 0;
+    // Interactive Mouse Look-At Tracking (only applied when NOT in speaking mode)
+    let pointerYaw = 0;
+    let pointerPitch = 0;
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetYaw = THREE.MathUtils.clamp(x * 0.18, -0.18, 0.18);
-      targetPitch = THREE.MathUtils.clamp(y * 0.12, -0.12, 0.12);
+      pointerYaw = THREE.MathUtils.clamp(x * 0.16, -0.16, 0.16);
+      pointerPitch = THREE.MathUtils.clamp(y * 0.1, -0.1, 0.1);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -286,91 +314,305 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     window.addEventListener('resize', handleResize);
 
     // Animation Smoothing States
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
     let blinkTimer = 0;
     let blinkProgress = 0;
     let isBlinking = false;
     let frameId: number;
 
+    // Smoothed Lip-Sync & Facial Blendshape States (Oculus Visemes synced across Head, Teeth & Tongue)
+    const VISEME_NAMES = [
+      'viseme_PP',
+      'viseme_FF',
+      'viseme_TH',
+      'viseme_DD',
+      'viseme_kk',
+      'viseme_CH',
+      'viseme_SS',
+      'viseme_nn',
+      'viseme_RR',
+      'viseme_aa',
+      'viseme_E',
+      'viseme_I',
+      'viseme_O',
+      'viseme_U',
+    ] as const;
+
+    // Realistic conversational English phoneme sequence (alternating consonants, vowels & natural micro-pauses)
+    const SPEECH_TIMELINE: Array<{
+      viseme: (typeof VISEME_NAMES)[number] | 'viseme_sil';
+      weight: number;
+      jaw: number;
+      duration: number;
+    }> = [
+      { viseme: 'viseme_DD', weight: 0.42, jaw: 0.02, duration: 0.09 },
+      { viseme: 'viseme_E', weight: 0.52, jaw: 0.04, duration: 0.13 },
+      { viseme: 'viseme_nn', weight: 0.38, jaw: 0.02, duration: 0.08 },
+      { viseme: 'viseme_aa', weight: 0.54, jaw: 0.06, duration: 0.15 },
+      { viseme: 'viseme_RR', weight: 0.42, jaw: 0.02, duration: 0.09 },
+      { viseme: 'viseme_I', weight: 0.48, jaw: 0.03, duration: 0.12 },
+      { viseme: 'viseme_SS', weight: 0.36, jaw: 0.01, duration: 0.08 },
+      { viseme: 'viseme_O', weight: 0.46, jaw: 0.04, duration: 0.14 },
+      { viseme: 'viseme_PP', weight: 0.48, jaw: 0.0, duration: 0.09 },
+      { viseme: 'viseme_E', weight: 0.46, jaw: 0.03, duration: 0.12 },
+      { viseme: 'viseme_TH', weight: 0.38, jaw: 0.02, duration: 0.08 },
+      { viseme: 'viseme_aa', weight: 0.48, jaw: 0.05, duration: 0.14 },
+      { viseme: 'viseme_FF', weight: 0.42, jaw: 0.01, duration: 0.09 },
+      { viseme: 'viseme_U', weight: 0.46, jaw: 0.02, duration: 0.12 },
+      { viseme: 'viseme_kk', weight: 0.36, jaw: 0.02, duration: 0.08 },
+      { viseme: 'viseme_sil', weight: 0.0, jaw: 0.0, duration: 0.22 },
+      { viseme: 'viseme_CH', weight: 0.42, jaw: 0.02, duration: 0.09 },
+      { viseme: 'viseme_I', weight: 0.5, jaw: 0.03, duration: 0.13 },
+      { viseme: 'viseme_nn', weight: 0.36, jaw: 0.02, duration: 0.08 },
+      { viseme: 'viseme_O', weight: 0.44, jaw: 0.04, duration: 0.14 },
+      { viseme: 'viseme_DD', weight: 0.38, jaw: 0.02, duration: 0.08 },
+      { viseme: 'viseme_aa', weight: 0.5, jaw: 0.05, duration: 0.14 },
+      { viseme: 'viseme_PP', weight: 0.46, jaw: 0.0, duration: 0.09 },
+      { viseme: 'viseme_E', weight: 0.48, jaw: 0.03, duration: 0.12 },
+      { viseme: 'viseme_SS', weight: 0.34, jaw: 0.01, duration: 0.08 },
+      { viseme: 'viseme_sil', weight: 0.0, jaw: 0.0, duration: 0.25 },
+    ];
+
+    const visemeWeights: Record<string, number> = {};
+    for (const v of VISEME_NAMES) visemeWeights[v] = 0;
+
+    let phonemeIdx = 0;
+    let phonemeElapsed = 0;
     let currentJaw = 0;
-    let currentVisemeAA = 0;
-    let currentVisemeO = 0;
-    let currentVisemeE = 0;
+    let currentSmile = baseSmile;
+    let currentBrowUp = 0;
+
+    // Smoothed Arm / Forearm / Hand Gesture States
+    let lArmX = baseArmRx;
+    let lArmZ = -baseArmRz;
+    let rArmX = baseArmRx;
+    let rArmZ = baseArmRz;
+    let lForeArmX = 0.12;
+    let lForeArmZ = 0.18;
+    let rForeArmX = 0.12;
+    let rForeArmZ = -0.18;
+    let lHandX = 0;
+    let lHandZ = 0;
+    let rHandX = 0;
+    let rHandZ = 0;
 
     const animate = () => {
-      const delta = clock.getDelta();
+      const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
+      const {
+        activeState: curState,
+        audioPlaying: curAudioPlaying,
+        isRecording: curIsRecording,
+      } = liveStateRef.current;
+      const isSpeaking = curState === 'speaking' || curAudioPlaying;
 
       // Ensure tongue remains naturally inside mouth at all times
       setMorph('tongueOut', 0);
 
       // 1. Subtle natural breathing & posture
       if (spineBone) {
-        spineBone.rotation.x = baseSpineRotX + Math.sin(time * 1.5) * 0.012;
+        const breathAmp = isSpeaking ? 0.015 : 0.01;
+        spineBone.rotation.x = baseSpineRotX + Math.sin(time * 1.6) * breathAmp;
       }
 
-      // 2. Smooth Head Tracking & Conversational Sway
+      // 2. Head Motion:
+      //    - When SPEAKING: disable mouse cursor tracking completely; maintain direct eye contact
+      //      with gentle, organic conversational cadence.
+      //    - When NOT speaking: allow subtle mouse look-at tracking.
       if (headBone) {
-        const swayY = Math.sin(time * 1.2) * 0.015;
-        const swayX = Math.cos(time * 1.8) * 0.01;
-        headBone.rotation.y = THREE.MathUtils.lerp(headBone.rotation.y, baseHeadRotY + targetYaw + swayY, 0.08);
-        headBone.rotation.x = THREE.MathUtils.lerp(headBone.rotation.x, baseHeadRotX - targetPitch + swayX, 0.08);
+        const activeYaw = isSpeaking ? 0 : pointerYaw;
+        const activePitch = isSpeaking ? 0 : pointerPitch;
+
+        const swayY = isSpeaking
+          ? Math.sin(time * 1.35) * 0.018 + Math.sin(time * 2.9) * 0.008
+          : Math.sin(time * 1.1) * 0.012;
+        const swayX = isSpeaking
+          ? Math.cos(time * 2.1) * 0.014 + Math.sin(time * 4.2) * 0.006
+          : Math.cos(time * 1.5) * 0.008;
+
+        headBone.rotation.y = THREE.MathUtils.lerp(
+          headBone.rotation.y,
+          baseHeadRotY + activeYaw + swayY,
+          0.09
+        );
+        headBone.rotation.x = THREE.MathUtils.lerp(
+          headBone.rotation.x,
+          baseHeadRotX - activePitch + swayX,
+          0.09
+        );
       }
 
-      // 3. Realistic Conversational Speech Lip-Sync (Deepgram Aura Sync)
-      const isSpeaking = activeState === 'speaking' || audioPlaying;
+      if (neckBone) {
+        const neckYaw = isSpeaking ? Math.sin(time * 1.35) * 0.008 : pointerYaw * 0.25;
+        neckBone.rotation.y = THREE.MathUtils.lerp(
+          neckBone.rotation.y,
+          baseNeckRotY + neckYaw,
+          0.08
+        );
+        neckBone.rotation.x = THREE.MathUtils.lerp(neckBone.rotation.x, baseNeckRotX, 0.08);
+      }
+
+      // 3. Natural Conversational Speech Lip-Sync (Unified Oculus Viseme Timeline)
+      const attackAlpha = 1 - Math.exp(-delta * 22);
+      const decayAlpha = 1 - Math.exp(-delta * 14);
+
       if (isSpeaking) {
-        // Natural human syllable cadence (~4-5 syllables/sec, subtle 0.08 - 0.28 range)
-        const syllable1 = Math.sin(time * 9.0);
-        const syllable2 = Math.cos(time * 4.5);
-        const rawMouth = Math.max(0, syllable1 * 0.7 + syllable2 * 0.3);
+        phonemeElapsed += delta;
+        let currentPhoneme = SPEECH_TIMELINE[phonemeIdx];
+        if (phonemeElapsed >= currentPhoneme.duration) {
+          phonemeElapsed -= currentPhoneme.duration;
+          phonemeIdx = (phonemeIdx + 1) % SPEECH_TIMELINE.length;
+          currentPhoneme = SPEECH_TIMELINE[phonemeIdx];
+        }
 
-        const targetJaw = rawMouth * 0.18;
-        const targetAA = rawMouth * 0.15;
-        const targetO = Math.max(0, Math.sin(time * 5.2)) * 0.12;
-        const targetE = Math.max(0, Math.cos(time * 6.4)) * 0.14;
+        // Smooth bell-shaped envelope within each phoneme so transitions never snap
+        const progress = THREE.MathUtils.clamp(phonemeElapsed / currentPhoneme.duration, 0, 1);
+        const envelope = 0.55 + 0.45 * Math.sin(progress * Math.PI);
+        const activeViseme = currentPhoneme.viseme;
+        const activeWeight = currentPhoneme.weight * envelope;
 
-        currentJaw = THREE.MathUtils.lerp(currentJaw, targetJaw, 0.28);
-        currentVisemeAA = THREE.MathUtils.lerp(currentVisemeAA, targetAA, 0.28);
-        currentVisemeO = THREE.MathUtils.lerp(currentVisemeO, targetO, 0.28);
-        currentVisemeE = THREE.MathUtils.lerp(currentVisemeE, targetE, 0.28);
+        for (const v of VISEME_NAMES) {
+          const target = v === activeViseme ? activeWeight : 0;
+          const alpha = target > visemeWeights[v] ? attackAlpha : decayAlpha;
+          visemeWeights[v] = THREE.MathUtils.lerp(visemeWeights[v], target, alpha);
+          setMorph(v, visemeWeights[v]);
+        }
 
-        setMorph('jawOpen', currentJaw);
-        setMorph('mouthOpen', currentJaw * 0.5);
-        setMorph('viseme_aa', currentVisemeAA);
-        setMorph('viseme_O', currentVisemeO);
-        setMorph('viseme_E', currentVisemeE);
-        setSmile(isStrict ? 0.08 : 0.22);
+        const targetJaw = currentPhoneme.jaw * envelope;
+        currentJaw = THREE.MathUtils.lerp(
+          currentJaw,
+          targetJaw,
+          targetJaw > currentJaw ? attackAlpha : decayAlpha
+        );
+
+        // Relax smile during rounded/bilabial sounds so lips close & round naturally
+        const isRoundedOrClosed =
+          activeViseme === 'viseme_O' ||
+          activeViseme === 'viseme_U' ||
+          activeViseme === 'viseme_PP' ||
+          activeViseme === 'viseme_FF';
+        const targetSmile = isRoundedOrClosed
+          ? isStrict
+            ? 0.02
+            : 0.05
+          : isStrict
+          ? 0.04
+          : 0.11;
+        const targetBrow = 0.05 + Math.max(0, Math.sin(time * 2.2)) * 0.08;
+
+        currentSmile = THREE.MathUtils.lerp(currentSmile, targetSmile, decayAlpha);
+        currentBrowUp = THREE.MathUtils.lerp(currentBrowUp, targetBrow, decayAlpha);
       } else {
         // Smooth transition to relaxed, closed mouth with polite recruiter smile
-        currentJaw = THREE.MathUtils.lerp(currentJaw, 0, 0.22);
-        currentVisemeAA = THREE.MathUtils.lerp(currentVisemeAA, 0, 0.22);
-        currentVisemeO = THREE.MathUtils.lerp(currentVisemeO, 0, 0.22);
-        currentVisemeE = THREE.MathUtils.lerp(currentVisemeE, 0, 0.22);
-
-        setMorph('jawOpen', currentJaw);
-        setMorph('mouthOpen', currentJaw);
-        setMorph('viseme_aa', currentVisemeAA);
-        setMorph('viseme_O', currentVisemeO);
-        setMorph('viseme_E', currentVisemeE);
-        setSmile(baseSmile);
+        phonemeElapsed = 0;
+        for (const v of VISEME_NAMES) {
+          visemeWeights[v] = THREE.MathUtils.lerp(visemeWeights[v], 0, decayAlpha);
+          setMorph(v, visemeWeights[v]);
+        }
+        currentJaw = THREE.MathUtils.lerp(currentJaw, 0, decayAlpha);
+        currentSmile = THREE.MathUtils.lerp(currentSmile, baseSmile, decayAlpha);
+        currentBrowUp = THREE.MathUtils.lerp(
+          currentBrowUp,
+          curState === 'listening' && curIsRecording ? 0.16 : 0,
+          decayAlpha
+        );
       }
 
-      // 4. Attentive Listening Nod when candidate speaks (Spacebar held)
-      if (activeState === 'listening' && isRecording) {
+      setMorph('jawOpen', currentJaw);
+      setMorph('mouthOpen', 0);
+      setSmile(currentSmile);
+      setMorph('browInnerUp', currentBrowUp);
+      setMorph('browOuterUpLeft', currentBrowUp * 0.5);
+      setMorph('browOuterUpRight', currentBrowUp * 0.5);
+
+      // 4. Slight Natural Hand & Arm Movements while Talking
+      if (isSpeaking) {
+        // Organic alternating left/right gesture waves so hands/arms move subtly with speech
+        const leftWave = Math.max(0, Math.sin(time * 1.7) * 0.7 + Math.sin(time * 0.9) * 0.3);
+        const rightWave = Math.max(
+          0,
+          Math.sin(time * 1.5 + 1.8) * 0.7 + Math.cos(time * 0.85) * 0.3
+        );
+        const microCadence = Math.sin(time * 3.6) * 0.04;
+
+        // Slight upper arm forward/inward shift + gentle forearm/hand lift into lower frame
+        const targetLArmX = baseArmRx - 0.1 * leftWave;
+        const targetLArmZ = -baseArmRz + 0.38 * leftWave;
+        const targetRArmX = baseArmRx - 0.1 * rightWave;
+        const targetRArmZ = baseArmRz - 0.38 * rightWave;
+
+        const targetLForeX = 0.22 + 0.12 * leftWave;
+        const targetLForeZ = 0.45 + 0.72 * leftWave + microCadence;
+        const targetRForeX = 0.22 + 0.12 * rightWave;
+        const targetRForeZ = -0.45 - 0.72 * rightWave - microCadence;
+
+        const targetLHandX = -0.08 * leftWave + microCadence;
+        const targetLHandZ = -0.12 * leftWave;
+        const targetRHandX = -0.08 * rightWave - microCadence;
+        const targetRHandZ = 0.12 * rightWave;
+
+        lArmX = THREE.MathUtils.lerp(lArmX, targetLArmX, 0.06);
+        lArmZ = THREE.MathUtils.lerp(lArmZ, targetLArmZ, 0.06);
+        rArmX = THREE.MathUtils.lerp(rArmX, targetRArmX, 0.06);
+        rArmZ = THREE.MathUtils.lerp(rArmZ, targetRArmZ, 0.06);
+
+        lForeArmX = THREE.MathUtils.lerp(lForeArmX, targetLForeX, 0.07);
+        lForeArmZ = THREE.MathUtils.lerp(lForeArmZ, targetLForeZ, 0.07);
+        rForeArmX = THREE.MathUtils.lerp(rForeArmX, targetRForeX, 0.07);
+        rForeArmZ = THREE.MathUtils.lerp(rForeArmZ, targetRForeZ, 0.07);
+
+        lHandX = THREE.MathUtils.lerp(lHandX, targetLHandX, 0.1);
+        lHandZ = THREE.MathUtils.lerp(lHandZ, targetLHandZ, 0.1);
+        rHandX = THREE.MathUtils.lerp(rHandX, targetRHandX, 0.1);
+        rHandZ = THREE.MathUtils.lerp(rHandZ, targetRHandZ, 0.1);
+      } else {
+        // Gentle idle breathing sway at rest
+        const idleBreath = Math.sin(time * 1.5) * 0.015;
+        lArmX = THREE.MathUtils.lerp(lArmX, baseArmRx + idleBreath, 0.06);
+        lArmZ = THREE.MathUtils.lerp(lArmZ, -baseArmRz, 0.06);
+        rArmX = THREE.MathUtils.lerp(rArmX, baseArmRx + idleBreath, 0.06);
+        rArmZ = THREE.MathUtils.lerp(rArmZ, baseArmRz, 0.06);
+
+        lForeArmX = THREE.MathUtils.lerp(lForeArmX, 0.12, 0.06);
+        lForeArmZ = THREE.MathUtils.lerp(lForeArmZ, 0.18, 0.06);
+        rForeArmX = THREE.MathUtils.lerp(rForeArmX, 0.12, 0.06);
+        rForeArmZ = THREE.MathUtils.lerp(rForeArmZ, -0.18, 0.06);
+
+        lHandX = THREE.MathUtils.lerp(lHandX, 0, 0.08);
+        lHandZ = THREE.MathUtils.lerp(lHandZ, 0, 0.08);
+        rHandX = THREE.MathUtils.lerp(rHandX, 0, 0.08);
+        rHandZ = THREE.MathUtils.lerp(rHandZ, 0, 0.08);
+      }
+
+      if (leftArm) leftArm.rotation.set(lArmX, 0, lArmZ);
+      if (rightArm) rightArm.rotation.set(rArmX, 0, rArmZ);
+      if (leftForeArm) leftForeArm.rotation.set(lForeArmX, 0, lForeArmZ);
+      if (rightForeArm) rightForeArm.rotation.set(rForeArmX, 0, rForeArmZ);
+      if (leftHand) leftHand.rotation.set(lHandX, 0, lHandZ);
+      if (rightHand) rightHand.rotation.set(rHandX, 0, rHandZ);
+
+      // 5. Attentive Listening Nod when candidate speaks (Spacebar held)
+      if (curState === 'listening' && curIsRecording) {
         if (headBone) {
           headBone.rotation.x += Math.sin(time * 3.4) * 0.022; // Gentle attentive nod
-          headBone.rotation.z = baseHeadRotZ + 0.035; // Slight interested head tilt
+          headBone.rotation.z = THREE.MathUtils.lerp(
+            headBone.rotation.z,
+            baseHeadRotZ + 0.035,
+            0.1
+          ); // Slight interested head tilt
         }
-        setMorph('browInnerUp', 0.18);
       } else {
         if (headBone) {
-          headBone.rotation.z = THREE.MathUtils.lerp(headBone.rotation.z, baseHeadRotZ, 0.1);
+          const speakingTilt = isSpeaking ? Math.sin(time * 1.1) * 0.012 : 0;
+          headBone.rotation.z = THREE.MathUtils.lerp(
+            headBone.rotation.z,
+            baseHeadRotZ + speakingTilt,
+            0.1
+          );
         }
-        setMorph('browInnerUp', 0);
       }
 
-      // 5. Natural Eye Blinking Simulation (every ~3.5 seconds)
+      // 6. Natural Eye Blinking Simulation (every ~3.5 seconds)
       blinkTimer += delta;
       if (blinkTimer > 3.5 && !isBlinking) {
         isBlinking = true;
@@ -405,7 +647,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [avatarMode, activeState, audioPlaying, isRecording, perxonaLoaded, perxonaConfig, persona]);
+  }, [avatarMode, perxonaLoaded, perxonaConfig, persona.model, persona.name]);
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full max-w-xl mx-auto">

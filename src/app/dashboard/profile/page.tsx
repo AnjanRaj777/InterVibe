@@ -35,38 +35,54 @@ import {
   Check,
   Sun,
   Moon,
-  Camera
+  Camera,
+  ArrowLeftRight
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuthStore();
+  const router = useRouter();
+  const { user, logout, updateAvatar, updateProfile, prepareAccountSwitch } = useAuthStore();
   const { sessions, clearSessions } = useSessionStore();
   const { activeTheme, setActiveTheme } = useThemeConfig();
   const { theme: mode, setTheme: setMode } = useTheme();
 
   // Candidate Profile State
-  const [name, setName] = useState(user?.name || 'Alex Rivera');
-  const [email, setEmail] = useState(user?.email || 'alex@intervibe.ai');
-  const [targetRole, setTargetRole] = useState('Senior Full Stack Developer');
-  const [seniority, setSeniority] = useState('Senior / Staff');
-  const [targetCompanies, setTargetCompanies] = useState('Linear, Stripe, Meta, OpenAI');
-  const [bio, setBio] = useState('Full Stack Engineer with 6+ years of experience scaling Next.js, Node.js, distributed microservices, and high-throughput real-time voice architectures.');
-  const [avatarUrl, setAvatarUrl] = useState('https://i.pravatar.cc/150?img=32');
+  const [name, setName] = useState(user?.name || 'Candidate');
+  const [email, setEmail] = useState(user?.email || '');
+  const [targetRole, setTargetRole] = useState(user?.targetRole || 'Senior Full Stack Developer');
+  const [seniority, setSeniority] = useState(user?.seniority || 'Senior / Staff');
+  const [targetCompanies, setTargetCompanies] = useState(
+    user?.targetCompanies || 'Linear, Stripe, Meta, OpenAI'
+  );
+  const [bio, setBio] = useState(
+    user?.bio ||
+      'Full Stack Engineer with 6+ years of experience scaling Next.js, Node.js, distributed microservices, and high-throughput real-time voice architectures.'
+  );
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [avatarImgError, setAvatarImgError] = useState(false);
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [tempAvatarUrl, setTempAvatarUrl] = useState('');
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Tech Stack Tags
-  const [tags, setTags] = useState<string[]>(['Next.js', 'React', 'TypeScript', 'Node.js', 'PostgreSQL', 'WebSockets', 'System Design']);
+  const [tags, setTags] = useState<string[]>(
+    user?.tags || ['Next.js', 'React', 'TypeScript', 'Node.js', 'PostgreSQL', 'WebSockets', 'System Design']
+  );
   const [newTag, setNewTag] = useState('');
 
   // Audio & Interview Preferences
-  const [defaultPersona, setDefaultPersona] = useState('Sarah - Friendly HR');
-  const [pushToTalkMode, setPushToTalkMode] = useState('hold-space');
+  const [defaultPersona, setDefaultPersona] = useState(user?.defaultPersona || 'Sarah - Friendly HR');
+  const [pushToTalkMode, setPushToTalkMode] = useState(user?.pushToTalkMode || 'hold-space');
 
   // Active Resume State
-  const [activeResumeName, setActiveResumeName] = useState('Alex_Rivera_Resume_2026.pdf');
-  const [charCount, setCharCount] = useState(7840);
+  const [activeResumeName, setActiveResumeName] = useState(
+    user?.resumeName || `${(user?.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`
+  );
+  const [charCount, setCharCount] = useState(user?.resumeCharCount || 7840);
 
   // Microphone Test State
   const [isTestingMic, setIsTestingMic] = useState(false);
@@ -78,36 +94,119 @@ export default function ProfilePage() {
   // Confirmation Modals
   const [showResetModal, setShowResetModal] = useState(false);
 
+  // Sync local form state whenever hydrated/switched user changes
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name || 'Candidate');
+    setEmail(user.email || '');
+    setAvatarUrl(user.avatarUrl || '');
+    setAvatarImgError(false);
+    if (user.targetRole) setTargetRole(user.targetRole);
+    if (user.seniority) setSeniority(user.seniority);
+    if (user.targetCompanies !== undefined) setTargetCompanies(user.targetCompanies);
+    if (user.bio !== undefined) setBio(user.bio);
+    if (Array.isArray(user.tags)) setTags(user.tags);
+    if (user.defaultPersona) setDefaultPersona(user.defaultPersona);
+    if (user.pushToTalkMode) setPushToTalkMode(user.pushToTalkMode);
+    setActiveResumeName(
+      user.resumeName || `${(user.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`
+    );
+    if (user.resumeCharCount) setCharCount(user.resumeCharCount);
+  }, [
+    user?.email,
+    user?.name,
+    user?.avatarUrl,
+    user?.targetRole,
+    user?.seniority,
+    user?.targetCompanies,
+    user?.bio,
+    user?.defaultPersona,
+    user?.pushToTalkMode,
+    user?.resumeName,
+    user?.resumeCharCount,
+  ]);
+
   // Add Tech Stack Tag
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
+      const nextTags = [...tags, newTag.trim()];
+      setTags(nextTags);
       setNewTag('');
+      updateProfile({ tags: nextTags });
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(t => t !== tagToRemove));
+    const nextTags = tags.filter((t) => t !== tagToRemove);
+    setTags(nextTags);
+    updateProfile({ tags: nextTags });
   };
 
   // Profile Save
-  const handleSaveProfile = () => {
-    toast.success("Profile preferences saved successfully!");
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    try {
+      await updateProfile({
+        name,
+        targetRole,
+        seniority,
+        targetCompanies,
+        bio,
+        tags,
+        defaultPersona,
+        pushToTalkMode,
+      });
+      toast.success('Profile preferences saved to your account!');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
-
-  // Avatar Options
-  const presetAvatars = [
-    'https://i.pravatar.cc/150?img=32',
-    'https://i.pravatar.cc/150?img=68',
-    'https://i.pravatar.cc/150?img=12',
-    'https://i.pravatar.cc/150?img=47',
-    'https://i.pravatar.cc/150?img=60',
-  ];
 
   const handleSelectAvatar = (url: string) => {
     setAvatarUrl(url);
+    setAvatarImgError(false);
+    updateAvatar(url);
     setShowAvatarDialog(false);
-    toast.success("Profile avatar updated");
+    toast.success(url ? 'Profile picture updated' : 'Profile picture removed');
+  };
+
+  const handleImageFileUpload = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (PNG, JPG, WEBP, or GIF)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be smaller than 5 MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Center-crop and resize to 256x256 for crisp display and fast localStorage persistence
+        const size = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          handleSelectAvatar(reader.result as string);
+          return;
+        }
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL('image/webp', 0.9);
+        handleSelectAvatar(dataUrl);
+      };
+      img.onerror = () => toast.error('Could not load the selected image');
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => toast.error('Failed to read image file');
+    reader.readAsDataURL(file);
   };
 
   // Microphone Volume Tester
@@ -196,12 +295,19 @@ export default function ProfilePage() {
               {/* Left: Avatar & Candidate Identity */}
               <div className="flex items-center gap-4 shrink-0">
                 <div className="relative group">
-                  <div className="h-20 w-20 rounded-full border-2 border-border dark:border-[#2a2a2a] overflow-hidden bg-muted shadow-md">
-                    <img 
-                      src={avatarUrl} 
-                      alt="Candidate Avatar" 
-                      className="h-full w-full object-cover" 
-                    />
+                  <div className="h-20 w-20 rounded-full border-2 border-border dark:border-[#2a2a2a] overflow-hidden bg-muted shadow-md flex items-center justify-center">
+                    {avatarUrl && !avatarImgError ? (
+                      <img 
+                        src={avatarUrl} 
+                        alt="Candidate Avatar" 
+                        className="h-full w-full object-cover" 
+                        onError={() => setAvatarImgError(true)}
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold font-mono text-emerald-400">
+                        {(name || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-emerald-500 border-2 border-card dark:border-[#121212]" />
                   <button
@@ -210,7 +316,7 @@ export default function ProfilePage() {
                     className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] font-mono text-white cursor-pointer"
                   >
                     <Camera className="size-4 mb-0.5" />
-                    <span>Change</span>
+                    <span>Upload</span>
                   </button>
                 </div>
 
@@ -281,19 +387,33 @@ export default function ProfilePage() {
               {/* Right: Actions */}
               <div className="flex sm:flex-row lg:flex-col items-center gap-2 w-full lg:w-auto shrink-0">
                 <Link href="/dashboard/interview" className="w-full sm:w-auto">
-                  <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5 h-9 px-4 rounded-xl shadow-xs cursor-pointer">
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5 h-9 px-4 rounded-xl shadow-xs cursor-pointer">
                     <Mic className="size-3.5" /> Start Interview
                   </Button>
                 </Link>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full sm:w-auto h-9 text-xs font-mono text-muted-foreground hover:text-red-500 hover:border-red-500/30 gap-1.5 rounded-xl cursor-pointer"
-                  onClick={() => logout()}
-                  title="Sign Out"
-                >
-                  <LogOut className="size-3.5" /> Sign Out
-                </Button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:w-auto h-9 text-xs font-mono text-muted-foreground hover:text-foreground gap-1.5 rounded-xl cursor-pointer"
+                    onClick={async () => {
+                      await prepareAccountSwitch();
+                      router.push('/auth/login?switch=1');
+                    }}
+                    title="Switch Account"
+                  >
+                    <ArrowLeftRight className="size-3.5" /> Switch Account
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 sm:w-auto h-9 text-xs font-mono text-muted-foreground hover:text-red-500 hover:border-red-500/30 gap-1.5 rounded-xl cursor-pointer"
+                    onClick={() => logout()}
+                    title="Sign Out"
+                  >
+                    <LogOut className="size-3.5" /> Sign Out
+                  </Button>
+                </div>
               </div>
 
             </div>
@@ -323,10 +443,11 @@ export default function ProfilePage() {
                   </div>
                   <Button 
                     size="sm" 
+                    disabled={isSavingProfile}
                     onClick={handleSaveProfile}
                     className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1.5 cursor-pointer"
                   >
-                    <Save className="size-3.5" /> Save Changes
+                    <Save className="size-3.5" /> {isSavingProfile ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
               </CardHeader>
@@ -658,7 +779,13 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-foreground font-mono">Default Interviewer Persona</label>
-                    <Select value={defaultPersona} onValueChange={setDefaultPersona}>
+                    <Select
+                      value={defaultPersona}
+                      onValueChange={(val) => {
+                        setDefaultPersona(val);
+                        updateProfile({ defaultPersona: val });
+                      }}
+                    >
                       <SelectTrigger className="bg-background border-border text-foreground text-xs">
                         <SelectValue />
                       </SelectTrigger>
@@ -672,7 +799,13 @@ export default function ProfilePage() {
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-foreground font-mono">Push-to-Talk Voice Trigger</label>
-                    <Select value={pushToTalkMode} onValueChange={setPushToTalkMode}>
+                    <Select
+                      value={pushToTalkMode}
+                      onValueChange={(val) => {
+                        setPushToTalkMode(val);
+                        updateProfile({ pushToTalkMode: val });
+                      }}
+                    >
                       <SelectTrigger className="bg-background border-border text-foreground text-xs">
                         <SelectValue />
                       </SelectTrigger>
@@ -725,34 +858,86 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* AVATAR SELECTION MODAL */}
+      {/* AVATAR UPLOAD MODAL */}
       <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
         <DialogContent className="max-w-md bg-card border-border text-foreground">
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold text-foreground">Select Profile Avatar</DialogTitle>
+            <DialogTitle className="text-base font-semibold text-foreground">Upload Profile Picture</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Choose from candidate avatars or enter a custom image URL.
+              Upload an image from your device or enter a custom image URL.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <div className="flex items-center justify-center gap-3">
-              {presetAvatars.map((url, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSelectAvatar(url)}
-                  className={`h-12 w-12 rounded-full border-2 overflow-hidden cursor-pointer transition-transform hover:scale-105 ${
-                    avatarUrl === url ? 'border-primary ring-2 ring-primary/40' : 'border-border'
-                  }`}
-                >
-                  <img src={url} alt={`Avatar ${i}`} className="h-full w-full object-cover" />
-                </button>
-              ))}
+            {/* Hidden File Input */}
+            <input
+              ref={avatarFileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageFileUpload(file);
+                e.target.value = '';
+              }}
+            />
+
+            {/* Drag & Drop / Click Upload Zone */}
+            <div
+              onClick={() => avatarFileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingImage(true);
+              }}
+              onDragLeave={() => setIsDraggingImage(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingImage(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleImageFileUpload(file);
+              }}
+              className={`rounded-xl border-2 border-dashed p-6 flex flex-col items-center justify-center text-center gap-2.5 cursor-pointer transition-colors ${
+                isDraggingImage
+                  ? 'border-emerald-500 bg-emerald-500/10'
+                  : 'border-border hover:border-primary/50 bg-muted/20 hover:bg-muted/40'
+              }`}
+            >
+              <div className="h-16 w-16 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shadow-sm">
+                {avatarUrl && !avatarImgError ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Current Avatar"
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarImgError(true)}
+                  />
+                ) : (
+                  <Upload className="size-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold text-foreground">
+                  Click to upload or drag &amp; drop
+                </p>
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  PNG, JPG, WEBP or GIF (max. 5MB)
+                </p>
+              </div>
             </div>
 
+            {avatarUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleSelectAvatar('')}
+                className="w-full h-8 text-xs text-muted-foreground hover:text-red-500 hover:border-red-500/30 gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="size-3.5" /> Remove Current Photo
+              </Button>
+            )}
+
             <div className="space-y-1.5 pt-2 border-t border-border">
-              <label className="text-xs font-mono text-muted-foreground">Custom Image URL</label>
+              <label className="text-xs font-mono text-muted-foreground">Or paste Custom Image URL</label>
               <div className="flex gap-2">
                 <Input
                   value={tempAvatarUrl}
@@ -768,7 +953,7 @@ export default function ProfilePage() {
                       setTempAvatarUrl('');
                     }
                   }}
-                  className="text-xs shrink-0"
+                  className="text-xs shrink-0 cursor-pointer"
                 >
                   Apply
                 </Button>

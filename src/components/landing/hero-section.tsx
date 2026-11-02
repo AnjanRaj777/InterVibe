@@ -524,7 +524,7 @@ export function HeroSection() {
 
       <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
         <Link href="/auth/signup">
-          <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-7 sm:px-8 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg ring-1 ring-white/10 cursor-pointer transition-all duration-300 hover:shadow-[0_0_24px_rgba(120,252,214,0.35)] hover:-translate-y-0.5">
+          <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-7 sm:px-8 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg ring-1 ring-white/10 hover:ring-emerald-300/40 cursor-pointer transition-all duration-300 hover:shadow-[0_0_24px_rgba(120,252,214,0.35)] hover:-translate-y-0.5">
             Start Your First Mock - Free
           </Button>
         </Link>
@@ -538,7 +538,7 @@ export function HeroSection() {
         >
           <Button 
             variant="outline" 
-            className="border-white/20 bg-white/5 hover:bg-white/10 text-foreground px-6 sm:px-7 py-3 rounded-full font-medium text-sm sm:text-base backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-emerald-300/40 hover:-translate-y-0.5 flex items-center gap-2"
+            className="border-white/20 bg-white/5 hover:bg-white/10 text-foreground px-6 sm:px-7 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-emerald-300/40 hover:shadow-[0_0_24px_rgba(120,252,214,0.35)] hover:-translate-y-0.5 flex items-center gap-2"
           >
             <Play className="size-3.5 fill-current" />
             <span>Watch 30s Demo</span>

@@ -29,19 +29,22 @@ export default function AppSidebar() {
   const { isOpen } = useMediaQuery();
   const filteredGroups = useFilteredNavGroups(navGroups);
   const { user } = useAuthStore();
+  const [avatarError, setAvatarError] = React.useState(false);
 
   React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
+    setAvatarError(false);
+  }, [user?.avatarUrl]);
 
   return (
     <Sidebar collapsible='icon' className='border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200'>
       
       {/* SIDEBAR HEADER LOGO (PERFECTLY CENTERED WHEN COLLAPSED) */}
       <SidebarHeader className='h-[64px] flex flex-row items-center gap-3 px-4 border-b border-sidebar-border shrink-0 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center'>
-        <div className='h-8 w-8 rounded-[8px] bg-foreground text-background grid place-items-center font-bold text-[13px] shadow-sm shrink-0'>
-          I
-        </div>
+        <img
+          src='/logo.png'
+          alt='InterVibe Logo'
+          className='h-8 w-8 object-contain shrink-0'
+        />
         <span className='text-[13.5px] font-semibold tracking-tight text-foreground group-data-[collapsible=icon]:hidden'>
           intervibe
         </span>
@@ -122,13 +125,20 @@ export default function AppSidebar() {
         <Link 
           href="/dashboard/profile"
           className='flex items-center gap-2.5 w-full p-1.5 rounded-xl hover:bg-sidebar-accent transition-colors cursor-pointer group group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center'
-          title={user?.name || 'Alex Morgan'}
+          title={user?.name || 'Candidate'}
         >
-          <img
-            src='https://i.pravatar.cc/100?img=32'
-            className='h-7 w-7 rounded-full object-cover shrink-0 border border-sidebar-border group-hover:border-foreground/40 transition-colors'
-            alt='user'
-          />
+          {user?.avatarUrl && !avatarError ? (
+            <img
+              src={user.avatarUrl}
+              className='h-7 w-7 rounded-full object-cover shrink-0 border border-sidebar-border group-hover:border-foreground/40 transition-colors'
+              alt='user'
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <div className='h-7 w-7 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 grid place-items-center text-[11px] font-bold font-mono shrink-0'>
+              {(user?.name || 'U').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className='leading-tight min-w-0 flex-1 group-data-[collapsible=icon]:hidden'>
             <p className='text-[12.5px] font-medium truncate text-foreground group-hover:text-foreground'>
               {user?.name || 'Alex Morgan'}

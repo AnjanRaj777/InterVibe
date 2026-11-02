@@ -40,14 +40,6 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         shortcut: ['p', 'p'],
         items: []
-      },
-      {
-        title: 'Sign In / Switch',
-        url: '/auth/login',
-        icon: 'login',
-        isActive: false,
-        shortcut: ['l', 'l'],
-        items: []
       }
     ]
   }

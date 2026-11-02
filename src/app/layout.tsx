@@ -9,6 +9,11 @@ import '../styles/globals.css';
 export const metadata: Metadata = {
   title: 'InterVibe | AI Mock Interview Platform',
   description: 'Ultra-low latency AI mock interview platform with real-time speech and personalized feedback.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export const viewport: Viewport = {
