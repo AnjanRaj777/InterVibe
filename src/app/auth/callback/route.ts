@@ -2,6 +2,29 @@ import { NextResponse } from 'next/server';
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 
+function resolveSafeRedirectBase(requestOrigin: string): string {
+  const rawAppUrl = (process.env.APP_URL || '').trim().replace(/\/$/, '');
+  if (!rawAppUrl) {
+    return requestOrigin;
+  }
+
+  const normalizedAppUrl = rawAppUrl.startsWith('http')
+    ? rawAppUrl
+    : `https://${rawAppUrl}`;
+
+  // Never redirect a production/non-localhost request to localhost even if APP_URL=http://localhost:3000 was copied into Vercel env vars
+  const isAppUrlLocal =
+    normalizedAppUrl.includes('localhost') || normalizedAppUrl.includes('127.0.0.1');
+  const isRequestLocal =
+    requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1');
+
+  if (isAppUrlLocal && !isRequestLocal) {
+    return requestOrigin;
+  }
+
+  return requestOrigin || normalizedAppUrl;
+}
+
 /**
  * Handles OAuth and Email Confirmation callback redirects from Supabase Auth.
  * Exchanges authorization code or verifies OTP token_hash for a session and redirects to target destination.
@@ -21,6 +44,8 @@ export async function GET(request: Request) {
     !rawNext.startsWith('/\\') &&
     !rawNext.includes(':');
   const next = isSafeRelativePath ? rawNext : '/dashboard/interview';
+
+  const redirectBase = resolveSafeRedirectBase(origin);
 
   if (code || (token_hash && type)) {
     const supabase = await createClient();
@@ -56,18 +81,13 @@ export async function GET(request: Request) {
         console.warn('[Auth Callback] Notice updating profile:', profileErr);
       }
 
-      // SEC-11 Fix: Prevent host header poisoning by preferring APP_URL or verified origin
-      const configuredBase = process.env.APP_URL
-        ? process.env.APP_URL.startsWith('http')
-          ? process.env.APP_URL
-          : `https://${process.env.APP_URL}`
-        : origin;
-
-      return NextResponse.redirect(new URL(next, configuredBase).toString());
+      return NextResponse.redirect(new URL(next, redirectBase).toString());
     }
     console.error('[Auth Callback] Exchange/Verify error:', error.message);
   }
 
   // Return the user to login with an error flag if exchange fails
-  return NextResponse.redirect(new URL('/auth/login?error=oauth_exchange_failed', origin).toString());
+  return NextResponse.redirect(
+    new URL('/auth/login?error=oauth_exchange_failed', redirectBase).toString()
+  );
 }

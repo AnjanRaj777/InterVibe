@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   getDodoClient,
   getDodoProductId,
+  getDodoEnvironment,
   normalizePlanTier,
   normalizeBillingCycle,
   resolvePlanFromProductId,
@@ -12,8 +13,20 @@ import {
 import { upsertUserSubscription } from '@/lib/db';
 
 function resolveAppOrigin(req: Request): string {
+  try {
+    const reqUrl = new URL(req.url);
+    if (reqUrl.origin && reqUrl.origin !== 'null') {
+      const isReqLocal =
+        reqUrl.origin.includes('localhost') || reqUrl.origin.includes('127.0.0.1');
+      if (!isReqLocal) {
+        return reqUrl.origin;
+      }
+    }
+  } catch {
+    // ignore
+  }
   const configured = (process.env.APP_URL || '').trim().replace(/\/$/, '');
-  if (process.env.NODE_ENV === 'production' && configured) {
+  if (configured && !configured.includes('localhost') && !configured.includes('127.0.0.1')) {
     return configured.startsWith('http') ? configured : `https://${configured}`;
   }
   try {
@@ -47,6 +60,36 @@ async function getAuthenticatedUser() {
   } catch {
     return null;
   }
+}
+
+function buildDodoHostedBuyUrl(params: {
+  productId: string;
+  quantity: number;
+  returnUrl: string;
+  email?: string;
+  name?: string;
+  userId: string;
+  tier: PlanTier;
+  billingCycle: BillingCycle;
+}): string {
+  const env = getDodoEnvironment();
+  const baseHost =
+    env === 'live_mode'
+      ? 'https://checkout.dodopayments.com'
+      : 'https://test.checkout.dodopayments.com';
+  const buyUrl = new URL(`/buy/${encodeURIComponent(params.productId)}`, baseHost);
+  buyUrl.searchParams.set('quantity', String(params.quantity));
+  buyUrl.searchParams.set('redirect_url', params.returnUrl);
+  if (params.email) {
+    buyUrl.searchParams.set('email', params.email);
+  }
+  if (params.name) {
+    buyUrl.searchParams.set('fullName', params.name);
+  }
+  buyUrl.searchParams.set('metadata_userId', params.userId);
+  buyUrl.searchParams.set('metadata_plan', params.tier);
+  buyUrl.searchParams.set('metadata_billingCycle', params.billingCycle);
+  return buyUrl.toString();
 }
 
 export async function POST(req: Request) {
@@ -103,16 +146,21 @@ export async function POST(req: Request) {
     if (!productId) {
       return NextResponse.json(
         {
-          error: `Dodo Product ID for ${tier.toUpperCase()} (${billingCycle}) is not configured. Please set DODO_PRODUCT_${tier.toUpperCase()}_${billingCycle.toUpperCase()} in .env.local.`,
+          error: `Dodo Product ID for ${tier.toUpperCase()} (${billingCycle}) is not configured yet. Please set DODO_PRODUCT_${tier.toUpperCase()}_${billingCycle.toUpperCase()} in .env.local.`,
           code: 'DODO_PRODUCT_MISSING',
         },
         { status: 503 }
       );
     }
 
+    const rawReturnEnv = (process.env.DODO_PAYMENTS_RETURN_URL || '').trim();
+    const isOriginLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isReturnEnvLocal =
+      rawReturnEnv.includes('localhost') || rawReturnEnv.includes('127.0.0.1');
     const returnUrlBase =
-      (process.env.DODO_PAYMENTS_RETURN_URL || '').trim() ||
-      `${origin}/dashboard/billing`;
+      rawReturnEnv && !(isReturnEnvLocal && !isOriginLocal)
+        ? rawReturnEnv
+        : `${origin}/dashboard/billing`;
     const returnUrl = new URL(returnUrlBase, origin);
     returnUrl.searchParams.set('dodo_checkout', 'success');
     returnUrl.searchParams.set('plan', tier);
@@ -121,50 +169,88 @@ export async function POST(req: Request) {
     const cancelUrl = new URL('/dashboard/billing', origin);
     cancelUrl.searchParams.set('dodo_checkout', 'cancelled');
 
-    const session = await dodo.checkoutSessions.create({
-      product_cart: [
-        {
-          product_id: productId,
-          quantity,
+    try {
+      const session = await dodo.checkoutSessions.create({
+        product_cart: [
+          {
+            product_id: productId,
+            quantity,
+          },
+        ],
+        customer: userEmail
+          ? {
+              email: userEmail,
+              name: userName,
+            }
+          : undefined,
+        return_url: returnUrl.toString(),
+        cancel_url: cancelUrl.toString(),
+        customization: {
+          theme: 'dark',
+          show_order_details: true,
         },
-      ],
-      customer: userEmail
-        ? {
-            email: userEmail,
-            name: userName,
-          }
-        : undefined,
-      return_url: returnUrl.toString(),
-      cancel_url: cancelUrl.toString(),
-      customization: {
-        theme: 'dark',
-        show_order_details: true,
-      },
-      feature_flags: {
-        allow_discount_code: true,
-        redirect_immediately: true,
-      },
-      metadata: {
-        userId,
-        email: userEmail,
+        feature_flags: {
+          allow_discount_code: true,
+          redirect_immediately: true,
+        },
+        metadata: {
+          userId,
+          email: userEmail,
+          plan: tier,
+          billingCycle,
+          app: 'InterVibe',
+        },
+      });
+
+      return NextResponse.json({
+        mode: 'dodo_redirect',
+        session_id: session.session_id,
+        checkout_url: session.checkout_url,
         plan: tier,
         billingCycle,
-        app: 'InterVibe',
-      },
-    });
+      });
+    } catch (sdkErr: any) {
+      // If the configured Dodo API key is Read-Only (missing checkout_sessions:write scope),
+      // seamlessly fall back to Dodo's official Hosted Product Checkout link (/buy/<product_id>)
+      const errCode = sdkErr?.error?.code || '';
+      const errMsg = String(sdkErr?.error?.message || sdkErr?.message || '');
+      if (
+        sdkErr?.status === 403 ||
+        errCode === 'INSUFFICIENT_PERMISSION' ||
+        errMsg.includes('checkout_sessions:write')
+      ) {
+        console.warn(
+          '[Dodo Checkout] API key lacks checkout_sessions:write scope; using Dodo Hosted Buy URL for product:',
+          productId
+        );
+        const hostedCheckoutUrl = buildDodoHostedBuyUrl({
+          productId,
+          quantity,
+          returnUrl: returnUrl.toString(),
+          email: userEmail,
+          name: userName,
+          userId,
+          tier,
+          billingCycle,
+        });
 
-    return NextResponse.json({
-      mode: 'dodo_redirect',
-      session_id: session.session_id,
-      checkout_url: session.checkout_url,
-      plan: tier,
-      billingCycle,
-    });
+        return NextResponse.json({
+          mode: 'dodo_redirect',
+          checkout_url: hostedCheckoutUrl,
+          plan: tier,
+          billingCycle,
+        });
+      }
+
+      throw sdkErr;
+    }
   } catch (err: any) {
     console.error('[Dodo Checkout POST] Error creating checkout session:', err);
+    const upstreamMsg =
+      err?.error?.message || err?.message || 'Failed to initialize Dodo Payments checkout';
     return NextResponse.json(
-      { error: 'Failed to initialize Dodo Payments checkout' },
-      { status: 500 }
+      { error: upstreamMsg },
+      { status: err?.status && err.status >= 400 && err.status < 600 ? err.status : 500 }
     );
   }
 }
@@ -201,9 +287,9 @@ export async function GET(req: Request) {
     const userEmail = authUser.email;
     const userName = authUser.name;
 
-    if (!sessionId && !subscriptionId) {
+    if (!sessionId && !subscriptionId && !paymentId) {
       return NextResponse.json(
-        { verified: false, error: 'Missing Dodo session_id or subscription_id' },
+        { verified: false, error: 'Missing Dodo session_id, subscription_id, or payment_id' },
         { status: 400 }
       );
     }
@@ -216,36 +302,38 @@ export async function GET(req: Request) {
     let isPaymentVerified = false;
 
     if (sessionId) {
-      const sessionStatus = await dodo.checkoutSessions.retrieve(sessionId);
-      // Verify ownership: customer email must match authenticated user
-      if (
-        sessionStatus.customer_email &&
-        userEmail &&
-        sessionStatus.customer_email.toLowerCase() !== userEmail.toLowerCase()
-      ) {
-        return NextResponse.json(
-          { verified: false, error: 'Checkout session ownership mismatch' },
-          { status: 403 }
-        );
-      }
+      try {
+        const sessionStatus = await dodo.checkoutSessions.retrieve(sessionId);
+        if (
+          sessionStatus.customer_email &&
+          userEmail &&
+          sessionStatus.customer_email.toLowerCase() !== userEmail.toLowerCase()
+        ) {
+          return NextResponse.json(
+            { verified: false, error: 'Checkout session ownership mismatch' },
+            { status: 403 }
+          );
+        }
 
-      if (sessionStatus.payment_status !== 'succeeded') {
-        return NextResponse.json(
-          {
-            verified: false,
-            payment_status: sessionStatus.payment_status,
-          },
-          { status: 200 }
-        );
-      }
+        if (sessionStatus.payment_status !== 'succeeded') {
+          return NextResponse.json(
+            {
+              verified: false,
+              payment_status: sessionStatus.payment_status,
+            },
+            { status: 200 }
+          );
+        }
 
-      resolvedPayId = sessionStatus.payment_id || resolvedPayId;
-      isPaymentVerified = true;
+        resolvedPayId = sessionStatus.payment_id || resolvedPayId;
+        isPaymentVerified = true;
+      } catch (e) {
+        console.warn('[Dodo Checkout GET] checkoutSessions.retrieve notice:', e);
+      }
     }
 
     if (subscriptionId) {
       const sub = await dodo.subscriptions.retrieve(subscriptionId);
-      // Verify ownership via metadata.userId or customer.email
       const metaUserId = sub.metadata?.userId ? String(sub.metadata.userId) : '';
       const subEmail = sub.customer?.email || '';
       if (
@@ -278,6 +366,23 @@ export async function GET(req: Request) {
         );
       }
       isPaymentVerified = true;
+    }
+
+    if (!isPaymentVerified && paymentId) {
+      const payment = await dodo.payments.retrieve(paymentId);
+      const payEmail = payment.customer?.email || '';
+      if (payEmail && userEmail && payEmail.toLowerCase() !== userEmail.toLowerCase()) {
+        return NextResponse.json(
+          { verified: false, error: 'Payment ownership mismatch' },
+          { status: 403 }
+        );
+      }
+      if (payment.status === 'succeeded') {
+        resolvedPayId = payment.payment_id;
+        resolvedCustomerId = payment.customer?.customer_id || resolvedCustomerId;
+        resolvedSubId = payment.subscription_id || resolvedSubId;
+        isPaymentVerified = true;
+      }
     }
 
     if (!isPaymentVerified) {
