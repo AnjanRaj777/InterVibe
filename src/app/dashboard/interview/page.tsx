@@ -27,7 +27,8 @@ import {
   FileText,
   Sliders
 } from 'lucide-react';
-import { InteractiveAvatar } from '@/components/avatar/interactive-avatar';
+import { InteractiveAvatar, preloadAllAvatarModels } from '@/components/avatar/interactive-avatar';
+import { PLANS, formatPlanAmountInr } from '@/lib/dodo';
 
 // Persona metadata
 const PERSONAS: Record<string, { name: string; title: string; latency: string; voice: string; avatar: string; auraVoice: string; model: string }> = {
@@ -114,9 +115,10 @@ function float32To16kMonoWav(samples: Float32Array, sampleRate: number): Blob {
 }
 
 export default function InterviewPage() {
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, upgradeSubscription, refreshSubscription } = useAuthStore();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   
   // Step navigation: 'upload' -> 'configure' -> 'interview'
   const [step, setStep] = useState<'upload' | 'configure' | 'interview'>('upload');
@@ -130,6 +132,10 @@ export default function InterviewPage() {
   const [difficultyLevel, setDifficultyLevel] = useState("Mid-Level");
   const [interviewerVoice, setInterviewerVoice] = useState(user?.defaultPersona || "Sarah - Friendly HR");
   const [interviewLength, setInterviewLength] = useState("Standard");
+
+  useEffect(() => {
+    preloadAllAvatarModels();
+  }, []);
 
   useEffect(() => {
     if (user?.targetRole) setJobRole(user.targetRole);
@@ -161,7 +167,7 @@ export default function InterviewPage() {
   const [currentAnalysis, setCurrentAnalysis] = useState<SessionAnalysis | null>(null);
   const [interviewStartTime, setInterviewStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const { addSession } = useSessionStore();
+  const { sessions, addSession } = useSessionStore();
 
   // Synchronized state refs to defeat stale closure bugs in audio callbacks
   const stepRef = useRef<'upload' | 'configure' | 'interview'>('upload');
@@ -797,6 +803,7 @@ ${resumeText.substring(0, 10000)}
           analysis: data.analysis,
         };
         addSession(newSession);
+        await refreshSubscription();
         toast.success("AI interview analysis saved to Dashboard!");
       } else {
         throw new Error(data.error || "Analysis response incomplete");
@@ -843,20 +850,92 @@ ${resumeText.substring(0, 10000)}
     setResumeFilename("");
   };
 
-  // Pro Subscription Gate
-  if (!user?.hasProSubscription) {
+  const activeTier = user?.subscriptionTier || (user?.hasProSubscription ? 'pro' : 'free');
+  const activePlanSpec = PLANS[activeTier] || PLANS.free;
+  const userSessions = (sessions || []).filter((s) => s.id !== 'session_demo_initial');
+  const userCompletedInterviews = userSessions.length;
+  const userMinutesUsed = Math.max(
+    0,
+    Math.round(userSessions.reduce((acc, s) => acc + (s.durationSeconds || 0), 0) / 60)
+  );
+  const remainingInterviews =
+    typeof user?.creditsRemaining === 'number'
+      ? Math.max(0, Math.min(user.creditsRemaining, activePlanSpec.interviewsLimit - userCompletedInterviews))
+      : Math.max(0, activePlanSpec.interviewsLimit - userCompletedInterviews);
+  const remainingMinutes = Math.max(0, activePlanSpec.minutesLimit - userMinutesUsed);
+  const isQuotaReached =
+    remainingInterviews <= 0 ||
+    remainingMinutes <= 0 ||
+    userCompletedInterviews >= activePlanSpec.interviewsLimit;
+
+  const handleQuickDodoUpgrade = async () => {
+    setIsCheckingOut(true);
+    try {
+      const res = await fetch('/api/checkout/dodo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: 'pro',
+          billingCycle: user?.billingCycle || 'monthly',
+          userId: user?.id,
+          email: user?.email,
+          name: user?.name,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Checkout failed');
+
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+
+      throw new Error(
+        data.error ||
+          'Dodo Payments checkout URL was not returned. Please configure DODO_PAYMENTS_API_KEY in .env.local.'
+      );
+    } catch (err: any) {
+      toast.error(err?.message || 'Unable to start Dodo checkout');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  // Subscription Quota Gate (triggered when active plan's interview or minutes quota is exhausted)
+  if (isQuotaReached) {
+    const nextUpgradeTier =
+      activeTier === 'free' ? 'hustler' : activeTier === 'hustler' ? 'pro' : 'teams';
+    const nextUpgradeSpec = PLANS[nextUpgradeTier];
     return (
       <div className="flex flex-1 flex-col justify-center items-center h-full min-h-[500px] text-center space-y-4 max-w-md mx-auto p-6">
         <div className="size-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
           <AlertCircle className="size-8" />
         </div>
-        <h1 className="text-2xl font-bold">Pro Subscription Required</h1>
+        <h1 className="text-2xl font-bold">{activePlanSpec.name} Limit Reached</h1>
         <p className="text-muted-foreground text-sm">
-          Access to the live AI verbal interview simulator is available to Pro members.
+          {activeTier === 'free'
+            ? `You have used all ${activePlanSpec.interviewsLimit} lifetime free interviews (${activePlanSpec.minutesLimit} mins total). Upgrade via Dodo Payments to unlock monthly recurring interviews.`
+            : `You have reached your ${activePlanSpec.name} quota (${activePlanSpec.interviewsLimit} interviews / ${activePlanSpec.minutesLimit} mins per month). Upgrade via Dodo Payments to unlock up to ${nextUpgradeSpec.interviewsLimit} interviews and ${nextUpgradeSpec.minutesLimit} minutes/month.`}
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button
+            onClick={handleQuickDodoUpgrade}
+            disabled={isCheckingOut}
+            className="gap-2 cursor-pointer"
+          >
+            {isCheckingOut ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Connecting Dodo...
+              </>
+            ) : (
+              'Upgrade to Pro (₹1,499/mo)'
+            )}
+          </Button>
           <Link href="/dashboard/billing">
-            <Button>Upgrade to Pro ($15/mo)</Button>
+            <Button variant="outline" className="cursor-pointer">
+              View All Plans
+            </Button>
           </Link>
         </div>
       </div>
@@ -869,7 +948,25 @@ ${resumeText.substring(0, 10000)}
 
         {/* STEP 1: UPLOAD RESUME */}
         {step === 'upload' && (
-          <div className="max-w-2xl mx-auto w-full py-6">
+          <div className="max-w-2xl mx-auto w-full py-6 space-y-3">
+            <div className="flex items-center justify-between px-3.5 py-2 rounded-xl border border-border bg-card/80 dark:border-[#222] dark:bg-[#121212] text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-semibold uppercase text-foreground">
+                  {activePlanSpec.name}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">
+                  {remainingInterviews}/{activePlanSpec.interviewsLimit} interviews • {remainingMinutes}/{activePlanSpec.minutesLimit} mins left
+                </span>
+              </div>
+              <Link
+                href="/dashboard/billing"
+                className="text-emerald-500 dark:text-emerald-400 hover:underline font-semibold"
+              >
+                {activeTier === 'free' ? 'Upgrade Plan →' : 'Manage Billing →'}
+              </Link>
+            </div>
             <Card className="border border-border bg-card dark:border-[#222] dark:bg-[#121212] shadow-sm rounded-[20px] text-foreground">
               <CardHeader className="border-b border-border dark:border-[#1e1e1e] pb-5">
                 <div className="flex items-center gap-3">
@@ -1042,7 +1139,9 @@ ${resumeText.substring(0, 10000)}
                       <SelectContent>
                         <SelectItem value="Quick Warmup">Quick Warmup (10m)</SelectItem>
                         <SelectItem value="Standard">Standard (30m)</SelectItem>
-                        <SelectItem value="Full Loop">Full Loop (45m+)</SelectItem>
+                        <SelectItem value="Full Loop" disabled={activeTier === 'free'}>
+                          Full Loop (45m+){activeTier === 'free' ? ' — Hustler/Pro Only' : ''}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1069,9 +1168,15 @@ ${resumeText.substring(0, 10000)}
           </div>
         )}
 
-        {/* STEP 3: LIVE AVATAR CENTER INTERVIEW ROOM */}
-        {step === 'interview' && (
-          <>
+        {/* STEP 3: LIVE AVATAR CENTER INTERVIEW ROOM (Pre-mounted and running during upload/configure so 3D avatar is ready with zero loading delay) */}
+        <div
+          aria-hidden={step !== 'interview'}
+          className={
+            step === 'interview'
+              ? 'flex-1 flex flex-col w-full'
+              : 'fixed -left-[9999px] top-0 w-[1080px] opacity-0 pointer-events-none select-none overflow-hidden -z-50'
+          }
+        >
             {/* MAIN INTERVIEW CARD */}
             <div className="flex-1 rounded-[20px] md:rounded-[24px] border border-[#222] bg-[#121212] overflow-hidden flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset,0_20px_60px_-20px_rgba(0,0,0,0.8)]">
               
@@ -1491,8 +1596,7 @@ ${resumeText.substring(0, 10000)}
               <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1a] border border-[#262626] text-zinc-400">Space</kbd>
               <span>to speak</span>
             </div>
-          </>
-        )}
+        </div>
 
       </div>
 

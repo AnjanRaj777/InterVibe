@@ -10,7 +10,8 @@ type BillingCycle = "monthly" | "annual"
 
 export function PricingSection() {
   const { user } = useAuthStore()
-  const [activePlan] = useState<PlanTier>("free")
+  const activePlan: PlanTier =
+    user?.subscriptionTier || (user?.hasProSubscription ? "pro" : "free")
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly")
 
   return (
@@ -96,10 +97,10 @@ export function PricingSection() {
               </div>
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-bold font-mono text-white tracking-tight">₹0</span>
-                <span className="text-xs font-mono text-neutral-400">/mo</span>
+                <span className="text-xs font-mono text-neutral-400">lifetime</span>
               </div>
               <p className="text-xs text-neutral-400 mt-1">For trying out InterVibe</p>
-              <p className="text-[11px] text-neutral-500 mt-2 mb-4">No card required</p>
+              <p className="text-[11px] text-neutral-500 mt-2 mb-4">One-time trial • No card required</p>
 
               <Link href="/dashboard/billing" className="w-full block">
                 <button
@@ -119,7 +120,7 @@ export function PricingSection() {
                 <div className="space-y-2.5 text-xs text-neutral-300 font-sans">
                   <div className="flex items-start gap-2">
                     <Check className="size-3.5 text-white shrink-0 mt-0.5" />
-                    <span>3 interviews / month</span>
+                    <span>3 interviews total (lifetime)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="size-3.5 text-white shrink-0 mt-0.5" />
@@ -383,6 +384,9 @@ export function PricingSection() {
         {/* PAYMENT BADGES & DISCLAIMER BAR */}
         <div className="border border-neutral-800 bg-[#0d0d0d] p-4 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs font-mono rounded-none">
           <div className="flex flex-wrap items-center gap-2.5 text-neutral-300">
+            <span className="border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 text-[11px] font-mono font-semibold rounded-none">
+              Dodo Payments
+            </span>
             <span className="border border-neutral-700 bg-neutral-900 text-neutral-300 px-2 py-0.5 text-[11px] font-mono rounded-none">
               Razorpay
             </span>
@@ -394,7 +398,7 @@ export function PricingSection() {
             </span>
           </div>
           <div className="text-[11px] text-neutral-500 font-mono text-left lg:text-right max-w-xl leading-relaxed">
-            Prices in INR. Annual saves 30%. All transactions square-edged, brutalist, minimal. No hidden rounding. Border-radius: 0 enforced.
+            Prices in INR. Annual saves 30%. Powered by Dodo Payments. Border-radius: 0 enforced.
           </div>
         </div>
       </div>

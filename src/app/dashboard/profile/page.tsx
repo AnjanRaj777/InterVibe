@@ -325,7 +325,7 @@ export default function ProfilePage() {
                     <h3 className="text-xl font-bold text-foreground tracking-tight">{name}</h3>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-500 dark:text-emerald-400 font-semibold">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      PRO MEMBER
+                      {(user?.subscriptionTier || (user?.hasProSubscription ? 'pro' : 'free')) === 'free' ? 'FREE PLAN' : `${(user?.subscriptionTier || 'pro').toUpperCase()} MEMBER`}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">

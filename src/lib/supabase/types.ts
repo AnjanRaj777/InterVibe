@@ -17,6 +17,12 @@ export interface Database {
           target_role: string | null;
           seniority: string | null;
           subscription_tier: string | null;
+          billing_cycle: string | null;
+          subscription_status: string | null;
+          dodo_customer_id: string | null;
+          dodo_subscription_id: string | null;
+          dodo_payment_id: string | null;
+          current_period_end: string | null;
           credits_remaining: number;
           created_at: string;
           updated_at: string;
@@ -28,6 +34,12 @@ export interface Database {
           target_role?: string | null;
           seniority?: string | null;
           subscription_tier?: string | null;
+          billing_cycle?: string | null;
+          subscription_status?: string | null;
+          dodo_customer_id?: string | null;
+          dodo_subscription_id?: string | null;
+          dodo_payment_id?: string | null;
+          current_period_end?: string | null;
           credits_remaining?: number;
           created_at?: string;
           updated_at?: string;
@@ -39,6 +51,12 @@ export interface Database {
           target_role?: string | null;
           seniority?: string | null;
           subscription_tier?: string | null;
+          billing_cycle?: string | null;
+          subscription_status?: string | null;
+          dodo_customer_id?: string | null;
+          dodo_subscription_id?: string | null;
+          dodo_payment_id?: string | null;
+          current_period_end?: string | null;
           credits_remaining?: number;
           created_at?: string;
           updated_at?: string;

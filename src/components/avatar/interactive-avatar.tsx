@@ -7,6 +7,33 @@ import { Sparkles, Radio, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { STAGE, stageVariants, avatarStageVariants } from '@/components/landing/motion-config';
 
+// In-memory GLB binary cache so avatar models preload before the interview starts
+const glbBufferCache = new Map<string, Promise<ArrayBuffer>>();
+
+export function preloadAvatarModel(url: string): Promise<ArrayBuffer> {
+  let existing = glbBufferCache.get(url);
+  if (!existing) {
+    existing = fetch(url, { cache: 'force-cache' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .catch((err) => {
+        glbBufferCache.delete(url);
+        throw err;
+      });
+    glbBufferCache.set(url, existing);
+  }
+  return existing;
+}
+
+export function preloadAllAvatarModels(): void {
+  if (typeof window === 'undefined') return;
+  ['/avatars/sarah.glb', '/avatars/michael.glb', '/avatars/emma.glb'].forEach((url) => {
+    preloadAvatarModel(url).catch(() => {});
+  });
+}
+
 interface InteractiveAvatarProps {
   persona: {
     name: string;
@@ -191,102 +218,109 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
     const baseArmRx = isEmma ? 1.3 : 1.38;
     const baseArmRz = isEmma ? 0.2 : 0.16;
 
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        if (isDisposed) return;
-        const model = gltf.scene;
+    const onGltfLoaded = (gltf: any) => {
+      if (isDisposed) return;
+      const model = gltf.scene;
 
-        model.traverse((child) => {
-          if ((child as any).isBone) {
-            if (child.name === 'Head') headBone = child;
-            if (child.name === 'Neck') neckBone = child;
-            if (child.name === 'Spine2') spineBone = child;
-            if (child.name === 'LeftArm') leftArm = child;
-            if (child.name === 'RightArm') rightArm = child;
-            if (child.name === 'LeftForeArm') leftForeArm = child;
-            if (child.name === 'RightForeArm') rightForeArm = child;
-            if (child.name === 'LeftHand') leftHand = child;
-            if (child.name === 'RightHand') rightHand = child;
+      model.traverse((child: any) => {
+        if (child.isBone) {
+          if (child.name === 'Head') headBone = child;
+          if (child.name === 'Neck') neckBone = child;
+          if (child.name === 'Spine2') spineBone = child;
+          if (child.name === 'LeftArm') leftArm = child;
+          if (child.name === 'RightArm') rightArm = child;
+          if (child.name === 'LeftForeArm') leftForeArm = child;
+          if (child.name === 'RightForeArm') rightForeArm = child;
+          if (child.name === 'LeftHand') leftHand = child;
+          if (child.name === 'RightHand') rightHand = child;
 
-            // Give fingers a natural relaxed anatomical curl instead of stiff T-pose fingers
-            if (/LeftHand(Index|Middle|Ring|Pinky)[123]/.test(child.name)) {
-              child.rotation.x = 0.22;
-            }
-            if (/RightHand(Index|Middle|Ring|Pinky)[123]/.test(child.name)) {
-              child.rotation.x = 0.22;
-            }
+          // Give fingers a natural relaxed anatomical curl instead of stiff T-pose fingers
+          if (/LeftHand(Index|Middle|Ring|Pinky)[123]/.test(child.name)) {
+            child.rotation.x = 0.22;
           }
-          if ((child as any).isMesh) {
-            const mesh = child as THREE.Mesh;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            // Hide glasses if present so character matches reference portrait
-            if (mesh.name.toLowerCase().includes('glasses')) {
-              mesh.visible = false;
-            }
-            if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
-              morphMeshes.push(mesh);
-            }
+          if (/RightHand(Index|Middle|Ring|Pinky)[123]/.test(child.name)) {
+            child.rotation.x = 0.22;
           }
-        });
+        }
+        if (child.isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          // Hide glasses if present so character matches reference portrait
+          if (mesh.name.toLowerCase().includes('glasses')) {
+            mesh.visible = false;
+          }
+          if (mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
+            morphMeshes.push(mesh);
+          }
+        }
+      });
 
-        // Store base rotations to maintain authentic anatomical posture
-        if (headBone) {
-          baseHeadRotX = (headBone as THREE.Object3D).rotation.x;
-          baseHeadRotY = (headBone as THREE.Object3D).rotation.y;
-          baseHeadRotZ = (headBone as THREE.Object3D).rotation.z;
-        }
-        if (neckBone) {
-          baseNeckRotX = (neckBone as THREE.Object3D).rotation.x;
-          baseNeckRotY = (neckBone as THREE.Object3D).rotation.y;
-        }
-        if (spineBone) {
-          baseSpineRotX = (spineBone as THREE.Object3D).rotation.x;
-        }
-
-        // 1. Lower arms naturally along torso sides
-        if (leftArm) {
-          leftArm.rotation.set(baseArmRx, 0, -baseArmRz);
-        }
-        if (rightArm) {
-          rightArm.rotation.set(baseArmRx, 0, baseArmRz);
-        }
-        if (leftForeArm) {
-          leftForeArm.rotation.set(0.12, 0, 0.18);
-        }
-        if (rightForeArm) {
-          rightForeArm.rotation.set(0.12, 0, -0.18);
-        }
-
-        // 2. Reference portrait positioning
-        let headY = 1.62;
-        if (headBone) {
-          const worldPos = new THREE.Vector3();
-          (headBone as THREE.Object3D).getWorldPosition(worldPos);
-          if (worldPos.y > 0) headY = worldPos.y;
-        }
-
-        const targetY = headY - 0.04;
-        const camY = headY + 0.02;
-        camera.position.set(0, camY, 1.15);
-        camera.lookAt(0, targetY, 0);
-
-        // 3. Reset any erroneous default model weights (e.g., tongueOut)
-        setMorph('tongueOut', 0);
-        setMorph('mouthOpen', 0);
-        setMorph('jawOpen', 0);
-        setSmile(baseSmile);
-
-        scene.add(model);
-        setModelLoading(false);
-      },
-      undefined,
-      (err) => {
-        console.error('[Avatar] Error loading 3D human model:', err);
-        setModelLoading(false);
+      // Store base rotations to maintain authentic anatomical posture
+      if (headBone) {
+        baseHeadRotX = (headBone as THREE.Object3D).rotation.x;
+        baseHeadRotY = (headBone as THREE.Object3D).rotation.y;
+        baseHeadRotZ = (headBone as THREE.Object3D).rotation.z;
       }
-    );
+      if (neckBone) {
+        baseNeckRotX = (neckBone as THREE.Object3D).rotation.x;
+        baseNeckRotY = (neckBone as THREE.Object3D).rotation.y;
+      }
+      if (spineBone) {
+        baseSpineRotX = (spineBone as THREE.Object3D).rotation.x;
+      }
+
+      // 1. Lower arms naturally along torso sides
+      if (leftArm) {
+        leftArm.rotation.set(baseArmRx, 0, -baseArmRz);
+      }
+      if (rightArm) {
+        rightArm.rotation.set(baseArmRx, 0, baseArmRz);
+      }
+      if (leftForeArm) {
+        leftForeArm.rotation.set(0.12, 0, 0.18);
+      }
+      if (rightForeArm) {
+        rightForeArm.rotation.set(0.12, 0, -0.18);
+      }
+
+      // 2. Reference portrait positioning
+      let headY = 1.62;
+      if (headBone) {
+        const worldPos = new THREE.Vector3();
+        (headBone as THREE.Object3D).getWorldPosition(worldPos);
+        if (worldPos.y > 0) headY = worldPos.y;
+      }
+
+      const targetY = headY - 0.04;
+      const camY = headY + 0.02;
+      camera.position.set(0, camY, 1.15);
+      camera.lookAt(0, targetY, 0);
+
+      // 3. Reset any erroneous default model weights (e.g., tongueOut)
+      setMorph('tongueOut', 0);
+      setMorph('mouthOpen', 0);
+      setMorph('jawOpen', 0);
+      setSmile(baseSmile);
+
+      scene.add(model);
+      setModelLoading(false);
+    };
+
+    const onGltfError = (err: any) => {
+      console.error('[Avatar] Error loading 3D human model:', err);
+      setModelLoading(false);
+    };
+
+    preloadAvatarModel(modelUrl)
+      .then((buffer) => {
+        if (isDisposed) return;
+        loader.parse(buffer.slice(0), '', onGltfLoaded, onGltfError);
+      })
+      .catch(() => {
+        if (isDisposed) return;
+        loader.load(modelUrl, onGltfLoaded, undefined, onGltfError);
+      });
 
     // Interactive Mouse Look-At Tracking (only applied when NOT in speaking mode)
     let pointerYaw = 0;
@@ -312,6 +346,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       }
     };
     window.addEventListener('resize', handleResize);
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => handleResize()) : null;
+    resizeObserver?.observe(container);
 
     // Animation Smoothing States
     const clock = new THREE.Clock();
@@ -642,6 +679,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       cancelAnimationFrame(frameId);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      resizeObserver?.disconnect();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);

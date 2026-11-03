@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { getUserSubscriptionFromDb } from '@/lib/db';
 
 // SEC-08: Allowed model identifiers
 const ALLOWED_MODELS = new Set([
@@ -12,12 +13,26 @@ const ALLOWED_MODELS = new Set([
 
 export async function POST(req: NextRequest) {
   try {
-    // SEC-05: Enforce server-side authentication
+    // SEC-05: Enforce server-side authentication & subscription quota check
     if (isSupabaseConfigured) {
       const supabase = await createClient();
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         return NextResponse.json({ error: 'Unauthorized: Valid session required' }, { status: 401 });
+      }
+
+      const sub = await getUserSubscriptionFromDb({
+        userId: user.id,
+        email: user.email,
+      });
+      if (sub && sub.creditsRemaining <= 0) {
+        return NextResponse.json(
+          {
+            error: 'Interview quota reached for your current plan. Please upgrade via Dodo Payments to continue.',
+            code: 'QUOTA_EXCEEDED',
+          },
+          { status: 402 }
+        );
       }
     }
 
@@ -27,10 +42,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing or empty messages array' }, { status: 400 });
     }
 
-    // Input bounds: limit message history length to avoid token flooding
+    // Input bounds: limit message history length to avoid token flooding.
+    // Only allow 'system' role on the very first message to prevent mid-conversation prompt injection.
     const boundedMessages = messages.slice(-40);
-    const formattedMessages = boundedMessages.map((m: any) => ({
-      role: m.role === 'user' || m.role === 'assistant' || m.role === 'system' ? m.role : 'user',
+    const formattedMessages = boundedMessages.map((m: any, idx: number) => ({
+      role:
+        idx === 0 && m.role === 'system'
+          ? 'system'
+          : m.role === 'assistant'
+          ? 'assistant'
+          : 'user',
       content: String(m.content || m.text || '').slice(0, 4000),
     }));
 

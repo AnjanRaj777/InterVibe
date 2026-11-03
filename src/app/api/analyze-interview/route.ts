@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { consumeUserInterviewCredit } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
+    let authedUser: { id: string; email?: string } | null = null;
+
     // SEC-05: Enforce server-side authentication
     if (isSupabaseConfigured) {
       const supabase = await createClient();
@@ -11,6 +14,7 @@ export async function POST(req: NextRequest) {
       if (authError || !user) {
         return NextResponse.json({ error: 'Unauthorized: Valid session required' }, { status: 401 });
       }
+      authedUser = { id: user.id, email: user.email };
     }
 
     const { 
@@ -24,6 +28,27 @@ export async function POST(req: NextRequest) {
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'No interview conversation provided' }, { status: 400 });
+    }
+
+    // Enforce server-side interview quota / credit consumption
+    let creditsRemaining: number | undefined;
+    if (authedUser) {
+      const creditResult = await consumeUserInterviewCredit({
+        userId: authedUser.id,
+        email: authedUser.email,
+      });
+      if (!creditResult.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Interview quota reached for your current plan. Please upgrade via Dodo Payments to continue.',
+            code: 'QUOTA_EXCEEDED',
+            creditsRemaining: 0,
+            tier: creditResult.tier,
+          },
+          { status: 402 }
+        );
+      }
+      creditsRemaining = creditResult.creditsRemaining;
     }
 
     // Input bounds: limit message count to prevent token abuse
@@ -106,6 +131,7 @@ Provide your rigorous, objective evaluation as a raw JSON object.`;
       return NextResponse.json({
         success: true,
         analysis: parsedAnalysis,
+        creditsRemaining,
         provider: 'meta-muse-spark',
         model: SPARK_MODEL,
       });
@@ -114,6 +140,7 @@ Provide your rigorous, objective evaluation as a raw JSON object.`;
       // Fallback structured analysis if model included extra text
       return NextResponse.json({
         success: true,
+        creditsRemaining,
         analysis: {
           overallScore: 78,
           technicalDepthScore: 75,
