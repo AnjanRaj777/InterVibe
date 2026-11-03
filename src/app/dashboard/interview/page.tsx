@@ -117,8 +117,10 @@ function float32To16kMonoWav(samples: Float32Array, sampleRate: number): Blob {
 export default function InterviewPage() {
   const { user, updateProfile, upgradeSubscription, refreshSubscription } = useAuthStore();
   const [file, setFile] = useState<File | null>(null);
+  const [isDraggingResume, setIsDraggingResume] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const resumeFileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Step navigation: 'upload' -> 'configure' -> 'interview'
   const [step, setStep] = useState<'upload' | 'configure' | 'interview'>('upload');
@@ -335,7 +337,29 @@ export default function InterviewPage() {
     };
   }, []);
 
-  // 1. Resume Upload Handler
+  // 1. Resume File Selection & Upload Handler
+  const handleResumeFileSelect = (selectedFile?: File | null) => {
+    if (!selectedFile) return;
+
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    const validExtensions = /\.(pdf|docx)$/i;
+
+    if (!validTypes.includes(selectedFile.type) && !validExtensions.test(selectedFile.name)) {
+      toast.error("Please select a valid PDF or DOCX resume file");
+      return;
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      toast.error("Resume file size must be under 10MB");
+      return;
+    }
+
+    setFile(selectedFile);
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please select a resume file first (.pdf)");
@@ -982,21 +1006,113 @@ ${resumeText.substring(0, 10000)}
                 </div>
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
-                <div className="border-2 border-dashed border-border dark:border-[#262626] rounded-xl p-8 text-center hover:border-foreground/50 transition-colors bg-muted/20 dark:bg-[#161616]/40">
-                  <FileText className="size-12 mx-auto text-muted-foreground mb-3" />
+                <input
+                  ref={resumeFileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleResumeFileSelect(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                />
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => resumeFileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      resumeFileInputRef.current?.click();
+                    }
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDraggingResume(true);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isDraggingResume) setIsDraggingResume(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setIsDraggingResume(false);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDraggingResume(false);
+                    const droppedFile = e.dataTransfer.files?.[0];
+                    if (droppedFile) handleResumeFileSelect(droppedFile);
+                  }}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+                    isDraggingResume
+                      ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01]'
+                      : file
+                        ? 'border-emerald-500/50 bg-emerald-500/5 hover:border-emerald-500'
+                        : 'border-border dark:border-[#262626] hover:border-foreground/50 bg-muted/20 dark:bg-[#161616]/40 hover:bg-muted/30'
+                  }`}
+                >
+                  <div
+                    className={`size-12 mx-auto rounded-xl flex items-center justify-center mb-3 transition-colors ${
+                      isDraggingResume || file
+                        ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {file ? (
+                      <CheckCircle2 className="size-6" />
+                    ) : isDraggingResume ? (
+                      <Upload className="size-6 animate-bounce" />
+                    ) : (
+                      <FileText className="size-6" />
+                    )}
+                  </div>
                   <p className="text-sm font-medium mb-1 text-foreground">
-                    {file ? file.name : "Select your PDF resume to begin"}
+                    {isDraggingResume
+                      ? "Drop your resume here"
+                      : file
+                        ? file.name
+                        : "Drag & drop your resume here, or click to browse"}
                   </p>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {file ? `${(file.size / 1024).toFixed(1)} KB` : "Supports PDF files up to 10MB"}
+                    {file
+                      ? `${(file.size / 1024).toFixed(1)} KB • Ready to extract`
+                      : "Supports PDF & DOCX files up to 10MB"}
                   </p>
-                  <div className="flex justify-center">
-                    <Input 
-                      type="file" 
-                      accept=".pdf,.docx" 
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                      className="max-w-xs cursor-pointer bg-background border-border text-foreground"
-                    />
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resumeFileInputRef.current?.click();
+                      }}
+                      className="h-8 text-xs bg-background border-border text-foreground cursor-pointer gap-1.5"
+                    >
+                      <Upload className="size-3.5" />
+                      {file ? "Change File" : "Browse Files"}
+                    </Button>
+                    {file && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFile(null);
+                        }}
+                        className="h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 </div>
 

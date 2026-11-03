@@ -36,7 +36,8 @@ import {
   Sun,
   Moon,
   Camera,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -83,6 +84,9 @@ export default function ProfilePage() {
     user?.resumeName || `${(user?.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`
   );
   const [charCount, setCharCount] = useState(user?.resumeCharCount || 7840);
+  const [isDraggingResume, setIsDraggingResume] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const resumeFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Microphone Test State
   const [isTestingMic, setIsTestingMic] = useState(false);
@@ -253,7 +257,7 @@ export default function ProfilePage() {
         testRafRef.current = requestAnimationFrame(loop);
       };
       loop();
-      toast.success("Microphone active — speak to test input level.");
+      toast.success("Microphone active â€” speak to test input level.");
     } catch (err: any) {
       toast.error("Microphone test error: " + err.message);
     }
@@ -275,6 +279,53 @@ export default function ProfilePage() {
     clearSessions();
     setShowResetModal(false);
     toast.success("All mock interview history and diagnostics have been reset.");
+  };
+
+  const handleResumeFileUpload = async (selectedFile?: File | null) => {
+    if (!selectedFile) return;
+
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    const validExtensions = /\.(pdf|docx)$/i;
+
+    if (!validTypes.includes(selectedFile.type) && !validExtensions.test(selectedFile.name)) {
+      toast.error('Please select a valid PDF or DOCX resume file');
+      return;
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      toast.error('Resume file size must be under 10MB');
+      return;
+    }
+
+    setIsUploadingResume(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/extract-resume', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to parse resume');
+
+      setActiveResumeName(selectedFile.name);
+      setCharCount(data.text.length);
+      await updateProfile({
+        resumeName: selectedFile.name,
+        resumeText: data.text,
+        resumeCharCount: data.text.length,
+      });
+      toast.success(`Resume updated! Extracted ${data.text.length.toLocaleString()} characters.`);
+    } catch (error: any) {
+      toast.error(error.message || 'Error processing resume');
+    } finally {
+      setIsUploadingResume(false);
+    }
   };
 
   return (
@@ -340,7 +391,7 @@ export default function ProfilePage() {
                     >
                       Change Avatar
                     </button>
-                    <span className="text-muted-foreground font-mono text-[10px]">•</span>
+                    <span className="text-muted-foreground font-mono text-[10px]">â€¢</span>
                     <span className="text-[11px] font-mono text-emerald-500 dark:text-emerald-400 font-medium">
                       Actively Interviewing
                     </span>
@@ -379,7 +430,7 @@ export default function ProfilePage() {
                     Audio Telemetry
                   </span>
                   <span className="text-xs font-mono font-medium text-emerald-500 dark:text-emerald-400 block mt-0.5">
-                    ● 16kHz WAV Mono
+                    â— 16kHz WAV Mono
                   </span>
                 </div>
               </div>
@@ -561,24 +612,100 @@ export default function ProfilePage() {
                 </div>
               </CardHeader>
               <CardContent className="pt-5">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/30 dark:bg-[#161616] dark:border-[#222]">
+                <input
+                  ref={resumeFileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleResumeFileUpload(file);
+                    e.target.value = '';
+                  }}
+                />
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => resumeFileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      resumeFileInputRef.current?.click();
+                    }
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDraggingResume(true);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isDraggingResume) setIsDraggingResume(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setIsDraggingResume(false);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDraggingResume(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleResumeFileUpload(file);
+                  }}
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+                    isDraggingResume
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50 dark:bg-[#161616] dark:border-[#222]'
+                  }`}
+                >
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 grid place-items-center">
-                      <CheckCircle2 className="size-5" />
+                    <div className="size-10 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 grid place-items-center shrink-0">
+                      {isUploadingResume ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : isDraggingResume ? (
+                        <Upload className="size-5 animate-bounce" />
+                      ) : (
+                        <CheckCircle2 className="size-5" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{activeResumeName}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {isDraggingResume ? 'Drop resume to upload' : activeResumeName}
+                      </p>
                       <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                        {charCount.toLocaleString()} characters indexed for AI cross-examination
+                        {isUploadingResume
+                          ? 'Extracting resume text...'
+                          : `${charCount.toLocaleString()} characters indexed • Drag & drop or click to replace`}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link href="/dashboard/interview">
-                      <Button variant="outline" size="sm" className="h-8 text-xs bg-card border-border hover:bg-muted text-foreground cursor-pointer">
-                        <Upload className="size-3.5 mr-1" /> Re-upload
-                      </Button>
-                    </Link>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isUploadingResume}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resumeFileInputRef.current?.click();
+                      }}
+                      className="h-8 text-xs bg-card border-border hover:bg-muted text-foreground cursor-pointer"
+                    >
+                      {isUploadingResume ? (
+                        <>
+                          <Loader2 className="size-3.5 mr-1 animate-spin" /> Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="size-3.5 mr-1" /> Re-upload
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -626,7 +753,7 @@ export default function ProfilePage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold font-mono text-foreground flex items-center gap-1.5">
-                          <span className="size-4 rounded-full bg-black text-white dark:bg-white dark:text-black grid place-items-center text-[10px]">▲</span>
+                          <span className="size-4 rounded-full bg-black text-white dark:bg-white dark:text-black grid place-items-center text-[10px]">â–²</span>
                           Vercel Preset
                         </span>
                         {activeTheme === 'vercel' && (
@@ -655,7 +782,7 @@ export default function ProfilePage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold font-mono text-emerald-500 dark:text-emerald-400 flex items-center gap-1.5">
-                          <span className="size-4 rounded-full bg-emerald-500 text-black grid place-items-center text-[10px]">⚡</span>
+                          <span className="size-4 rounded-full bg-emerald-500 text-black grid place-items-center text-[10px]">âš¡</span>
                           Supabase Preset
                         </span>
                         {activeTheme === 'supabase' && (
@@ -790,9 +917,9 @@ export default function ProfilePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Sarah - Friendly HR">Sarah Chen (Friendly HR • Deepgram Asteria)</SelectItem>
-                        <SelectItem value="Michael - Strict Engineering Manager">Michael Vance (Strict EM • Deepgram Orion)</SelectItem>
-                        <SelectItem value="Emma - British Technical Lead">Emma Watson (Tech Lead • Deepgram Luna)</SelectItem>
+                        <SelectItem value="Sarah - Friendly HR">Sarah Chen (Friendly HR â€¢ Deepgram Asteria)</SelectItem>
+                        <SelectItem value="Michael - Strict Engineering Manager">Michael Vance (Strict EM â€¢ Deepgram Orion)</SelectItem>
+                        <SelectItem value="Emma - British Technical Lead">Emma Watson (Tech Lead â€¢ Deepgram Luna)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
