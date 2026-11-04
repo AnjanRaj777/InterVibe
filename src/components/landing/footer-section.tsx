@@ -34,7 +34,11 @@ export function FooterSection() {
         {/* Left Section: Logo, Description, Social Links */}
         <div className="flex flex-col justify-start items-start gap-6 p-2 md:p-4 max-w-sm">
           <div className="flex gap-3 items-center">
-            <span className="text-foreground text-2xl font-bold tracking-tight">InterVibe</span>
+            <img
+              src="/logo-wordmark.png"
+              alt="InterVibe"
+              className="h-8 w-auto object-contain"
+            />
             <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
               v1.0
             </span>

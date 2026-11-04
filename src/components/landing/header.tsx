@@ -26,7 +26,16 @@ export function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-3">
-            <span className="text-foreground text-xl font-semibold tracking-tight">InterVibe</span>
+            <img
+              src="/logo-wordmark.png"
+              alt="InterVibe"
+              className="h-7 sm:h-8 w-auto object-contain hidden dark:block"
+            />
+            <img
+              src="/logo-wordmark-light.png"
+              alt="InterVibe"
+              className="h-7 sm:h-8 w-auto object-contain block dark:hidden"
+            />
           </Link>
           <nav className="hidden md:flex items-center gap-2">
             {navItems.map((item) => (

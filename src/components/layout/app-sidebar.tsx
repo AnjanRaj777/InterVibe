@@ -40,14 +40,21 @@ export default function AppSidebar() {
       
       {/* SIDEBAR HEADER LOGO (PERFECTLY CENTERED WHEN COLLAPSED) */}
       <SidebarHeader className='h-[64px] flex flex-row items-center gap-3 px-4 border-b border-sidebar-border shrink-0 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center'>
-        <img
-          src='/logo.png'
-          alt='InterVibe Logo'
-          className='h-8 w-8 object-contain shrink-0'
-        />
-        <span className='text-[13.5px] font-semibold tracking-tight text-foreground group-data-[collapsible=icon]:hidden'>
-          intervibe
-        </span>
+        <Link href='/dashboard' className='flex items-center gap-2.5'>
+          <img
+            src='/logo.png'
+            alt='iV Logo'
+            className='h-8 w-8 object-contain shrink-0 hidden dark:block'
+          />
+          <img
+            src='/logo-light.png'
+            alt='iV Logo'
+            className='h-8 w-8 object-contain shrink-0 block dark:hidden'
+          />
+          <span className='text-sm font-semibold tracking-tight text-foreground group-data-[collapsible=icon]:hidden'>
+            iV
+          </span>
+        </Link>
         <span className='ml-auto text-[10px] px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-muted-foreground group-data-[collapsible=icon]:hidden'>
           BETA
         </span>

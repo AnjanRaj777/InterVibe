@@ -107,11 +107,15 @@ export default function SignUpPage() {
       <header className="relative z-10 w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
           <img
-            src="/logo.png"
-            alt="InterVibe Logo"
-            className="size-8 object-contain group-hover:scale-105 transition-transform"
+            src="/logo-wordmark.png"
+            alt="InterVibe"
+            className="h-7 sm:h-8 w-auto object-contain group-hover:scale-105 transition-transform hidden dark:block"
           />
-          <span className="font-semibold text-base tracking-tight text-white">InterVibe</span>
+          <img
+            src="/logo-wordmark-light.png"
+            alt="InterVibe"
+            className="h-7 sm:h-8 w-auto object-contain group-hover:scale-105 transition-transform block dark:hidden"
+          />
         </Link>
 
         <Link

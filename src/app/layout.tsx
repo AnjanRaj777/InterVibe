@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   title: 'InterVibe | AI Mock Interview Platform',
   description: 'Ultra-low latency AI mock interview platform with real-time speech and personalized feedback.',
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/logo-light.png', media: '(prefers-color-scheme: light)' },
+      { url: '/logo.png', media: '(prefers-color-scheme: dark)' },
+    ],
     shortcut: '/logo.png',
     apple: '/logo.png',
   },
