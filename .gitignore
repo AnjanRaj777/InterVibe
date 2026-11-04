@@ -30,10 +30,6 @@ yarn-error.log*
 *.md
 !README.md
 !readme.md
-!AUDIT_REPORT.md
-!SECURITY.md
-!architecture_and_components_spec.md
-!TERMS_AND_PRIVACY.md
 
 # vercel
 .vercel
