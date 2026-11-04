@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Header } from "./header"
 import Link from "next/link"
 import { ZOOM } from "./motion-config"
+import { DemoVideoButton } from "./demo-video-modal"
 
 export function HeroSection() {
   const reduceMotion = useReducedMotion()
@@ -528,22 +529,7 @@ export function HeroSection() {
             Start Your First Mock - Free
           </Button>
         </Link>
-        <a 
-          href="#preview-card"
-          onClick={(e) => {
-            e.preventDefault();
-            const el = document.getElementById("preview-card");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }}
-        >
-          <Button 
-            variant="outline" 
-            className="border-white/20 bg-white/5 hover:bg-white/10 text-foreground px-6 sm:px-7 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-emerald-300/40 hover:shadow-[0_0_24px_rgba(120,252,214,0.35)] hover:-translate-y-0.5 flex items-center gap-2"
-          >
-            <Play className="size-3.5 fill-current" />
-            <span>Watch 30s Demo</span>
-          </Button>
-        </a>
+        <DemoVideoButton videoSrc="https://youtu.be/RlSbHkXWL0c" />
       </div>
       </motion.div>
     </section>
