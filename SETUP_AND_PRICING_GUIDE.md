@@ -132,18 +132,6 @@ A typical 10-minute mock interview (~8–10 Q&A turns) consumes:
 
 ---
 
-### B. Configured Plans & Profit Margins (`src/lib/dodo.ts`)
-
-| Plan | Price (Monthly) | Price (Annual/mo) | Interviews Limit | Minutes Limit | Max API Cost (100% Usage) | Typical API Cost (~40% Usage) | Gross Margin (Typical) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Free** (`free`) | **₹0** (One-time) | **₹0** | **3 lifetime** | **30 mins** | ₹22.50 once | ₹15.00 once | Customer Acquisition |
-| **Hustler** (`hustler`) | **₹499/mo** | **₹349/mo** | **20 / month** | **300 mins** | ₹150/mo | ~₹60/mo | **~88% profit** |
-| **Pro** (`pro`) | **₹1,499/mo** | **₹1,049/mo** | **100 / month** | **1,200 mins** | ₹750/mo | ~₹250/mo | **~83% profit** |
-| **Teams** (`teams`) | **₹4,999/mo** | **₹3,499/mo** | **500 / month** | **5,000 mins** | ₹3,750/mo | ~₹1,200/mo | **~76% profit** |
-
-> **Optional Margin Optimization**: If you want to guarantee **>75% margin** even on heavy power users who consume 100% of their monthly allowance on annual billing, you can adjust `interviewsLimit` in `src/lib/dodo.ts` to **15 interviews (200 mins)** for **Hustler** and **60 interviews (800 mins)** for **Pro**.
-
----
 
 ## 4. Best API & Payment Settings (Enforced in Code)
 
