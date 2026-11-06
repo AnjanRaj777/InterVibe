@@ -1294,12 +1294,12 @@ ${resumeText.substring(0, 10000)}
           }
         >
             {/* MAIN INTERVIEW CARD */}
-            <div className="flex-1 rounded-[20px] md:rounded-[24px] border border-[#222] bg-[#121212] overflow-hidden flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset,0_20px_60px_-20px_rgba(0,0,0,0.8)]">
+            <div className="flex-1 rounded-[20px] md:rounded-[24px] border border-border dark:border-[#222] bg-card dark:bg-[#121212] overflow-hidden flex flex-col shadow-sm dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset,0_20px_60px_-20px_rgba(0,0,0,0.8)]">
               
               {/* HEADER BAR */}
-              <div className="h-[68px] md:h-[72px] shrink-0 px-4 md:px-6 flex items-center justify-between border-b border-[#1e1e1e] bg-[#141414]/60 backdrop-blur">
+              <div className="h-[68px] md:h-[72px] shrink-0 px-4 md:px-6 flex items-center justify-between border-b border-border dark:border-[#1e1e1e] bg-card/60 dark:bg-[#141414]/60 backdrop-blur">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 rounded-full overflow-hidden border border-[#2a2a2a] shrink-0 hidden md:block">
+                  <div className="h-10 w-10 rounded-full overflow-hidden border border-border dark:border-[#2a2a2a] shrink-0 hidden md:block">
                     <img 
                       src={currentPersona.avatar} 
                       alt={currentPersona.name} 
@@ -1308,14 +1308,14 @@ ${resumeText.substring(0, 10000)}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h1 className="text-[14px] md:text-[15px] font-semibold tracking-tight truncate text-white">
+                      <h1 className="text-[14px] md:text-[15px] font-semibold tracking-tight truncate text-foreground dark:text-white">
                         {jobRole}
                       </h1>
-                      <span className="hidden md:inline-flex h-5 px-2 rounded-full bg-[#1c1c1c] border border-[#262626] text-[10px] font-mono tracking-wide text-zinc-400 items-center">
+                      <span className="hidden md:inline-flex h-5 px-2 rounded-full bg-muted dark:bg-[#1c1c1c] border border-border dark:border-[#262626] text-[10px] font-mono tracking-wide text-muted-foreground dark:text-zinc-400 items-center">
                         MOCK • {formatTimer(elapsedSeconds)}
                       </span>
                     </div>
-                    <p className="text-[12.5px] text-zinc-500 mt-0.5 font-mono truncate">
+                    <p className="text-[12.5px] text-muted-foreground dark:text-zinc-500 mt-0.5 font-mono truncate">
                       {currentPersona.title}
                     </p>
                   </div>
@@ -1329,7 +1329,7 @@ ${resumeText.substring(0, 10000)}
                       setStep('configure');
                       stepRef.current = 'configure';
                     }}
-                    className="h-8 px-3 rounded-full bg-[#1e1e1e] hover:bg-[#232323] border border-[#2a2a2a] text-[12px] font-medium text-zinc-400 hover:text-zinc-200 transition hidden md:flex items-center gap-1.5 cursor-pointer"
+                    className="h-8 px-3 rounded-full bg-muted/60 hover:bg-muted dark:bg-[#1e1e1e] dark:hover:bg-[#232323] border border-border dark:border-[#2a2a2a] text-[12px] font-medium text-foreground/80 hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-200 transition hidden md:flex items-center gap-1.5 cursor-pointer"
                     title="Change interview settings"
                   >
                     <Sliders className="size-3.5" />
@@ -1337,8 +1337,8 @@ ${resumeText.substring(0, 10000)}
                   </button>
 
                   {/* Voice Mode Toggle Switch */}
-                  <div className="hidden md:flex items-center gap-2 mr-2 pl-3 pr-1 py-1 rounded-full bg-[#181818] border border-[#242424]">
-                    <span className="text-[11px] font-mono text-zinc-400">Voice Mode</span>
+                  <div className="hidden md:flex items-center gap-2 mr-2 pl-3 pr-1 py-1 rounded-full bg-muted/50 dark:bg-[#181818] border border-border dark:border-[#242424]">
+                    <span className="text-[11px] font-mono text-muted-foreground dark:text-zinc-400">Voice Mode</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1353,7 +1353,7 @@ ${resumeText.substring(0, 10000)}
                       }}
                       className={`relative h-5 w-9 rounded-full transition-colors cursor-pointer ${voiceMode ? 'bg-white' : 'bg-[#2a2a2a]'}`}
                     >
-                      <span className={`absolute top-[2px] h-4 w-4 rounded-full transition-all ${voiceMode ? 'left-[18px] bg-black' : 'left-[2px] bg-zinc-400'}`} />
+                      <span className={`absolute top-[2px] h-4 w-4 rounded-full transition-all ${voiceMode ? 'left-[18px] bg-background dark:bg-black' : 'left-[2px] bg-muted-foreground dark:bg-zinc-400'}`} />
                     </button>
                   </div>
 
@@ -1361,7 +1361,7 @@ ${resumeText.substring(0, 10000)}
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="h-8 px-3.5 rounded-full bg-[#1e1e1e] hover:bg-[#232323] border border-[#2a2a2a] text-[12.5px] font-medium text-zinc-300 transition hidden md:flex items-center gap-1.5 cursor-pointer"
+                    className="h-8 px-3.5 rounded-full bg-muted/60 hover:bg-muted dark:bg-[#1e1e1e] dark:hover:bg-[#232323] border border-border dark:border-[#2a2a2a] text-[12.5px] font-medium text-foreground/80 hover:text-foreground dark:text-zinc-300 transition hidden md:flex items-center gap-1.5 cursor-pointer"
                   >
                     <span className="h-3 w-3">
                       <svg viewBox="0 0 16 16" fill="none" className="w-full h-full">
@@ -1384,18 +1384,18 @@ ${resumeText.substring(0, 10000)}
               </div>
 
               {/* CENTER HERO STAGE (AVATAR & RADAR) */}
-              <div className="flex-1 relative flex flex-col items-center justify-center py-8 md:py-12 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.06)_0%,_transparent_55%)] min-h-[420px] md:min-h-[500px]">
+              <div className="flex-1 relative flex flex-col items-center justify-center py-8 md:py-12 bg-[radial-gradient(ellipse_at_center,_rgba(0,0,0,0.03)_0%,_transparent_60%)] dark:bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.06)_0%,_transparent_55%)] min-h-[420px] md:min-h-[500px]">
                 {/* Grid Pattern Overlay */}
                 <div 
-                  className="pointer-events-none absolute inset-0 opacity-[0.03]"
+                  className="pointer-events-none absolute inset-0 opacity-[0.04] dark:opacity-[0.03]"
                   style={{
-                    backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+                    backgroundImage: "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)",
                     backgroundSize: "32px 32px"
                   }}
                 />
 
                 {/* Top State Pills */}
-                <div className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1 rounded-full bg-[#171717] border border-[#232323] shadow-lg z-10">
+                <div className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1 rounded-full bg-muted/80 dark:bg-[#171717] border border-border dark:border-[#232323] shadow-md z-10">
                   {(['speaking', 'thinking', 'listening'] as const).map((s) => (
                     <button
                       key={s}
@@ -1403,21 +1403,21 @@ ${resumeText.substring(0, 10000)}
                       onClick={() => setManualState(manualState === s ? null : s)}
                       className={`h-7 px-3.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase transition-all cursor-pointer ${
                         activeState === s 
-                          ? 'bg-white text-black shadow' 
-                          : 'text-zinc-500 hover:text-zinc-300'
+                          ? 'bg-background text-foreground shadow-sm dark:bg-white dark:text-black dark:shadow' 
+                          : 'text-muted-foreground hover:text-foreground dark:text-zinc-500 dark:hover:text-zinc-300'
                       }`}
                     >
                       {s}
                     </button>
                   ))}
-                  <div className="h-4 w-px bg-[#262626] mx-1" />
+                  <div className="h-4 w-px bg-border dark:bg-[#262626] mx-1" />
                   <button
                     type="button"
                     onClick={() => setManualState(null)}
                     className={`h-7 w-7 grid place-items-center rounded-full border transition cursor-pointer ${
                       manualState === null 
-                        ? 'bg-[#212121] border-[#2a2a2a] text-white' 
-                        : 'border-transparent text-zinc-500'
+                        ? 'bg-background border-border text-foreground dark:bg-[#212121] dark:border-[#2a2a2a] dark:text-white' 
+                        : 'border-transparent text-muted-foreground dark:text-zinc-500'
                     }`}
                     title="Auto live state sync"
                   >
@@ -1444,37 +1444,37 @@ ${resumeText.substring(0, 10000)}
                     <div className="flex items-center gap-2">
                       <span className={`h-1.5 w-1.5 rounded-full ${
                         activeState === 'speaking' ? 'bg-[#ff4a3d]' :
-                        activeState === 'thinking' ? 'bg-yellow-400' :
-                        (isRecording ? 'bg-[#ff4a3d] animate-ping' : 'bg-emerald-400')
+                        activeState === 'thinking' ? 'bg-amber-500 dark:bg-yellow-400' :
+                        (isRecording ? 'bg-[#ff4a3d] animate-ping' : 'bg-emerald-500 dark:bg-emerald-400')
                       }`} />
-                      <p className="font-mono text-[11px] tracking-widest uppercase text-zinc-400">
+                      <p className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground dark:text-zinc-400">
                         {activeState === 'speaking' ? 'Interviewer is speaking...' :
                          activeState === 'thinking' ? 'Interviewer is thinking (Meta Muse Spark)...' :
                          (isRecording ? 'You are speaking (Space held)...' : 'Listening...')}
                       </p>
                     </div>
-                    <h2 className="text-[16px] md:text-[18px] font-medium tracking-tight text-white">
+                    <h2 className="text-[16px] md:text-[18px] font-medium tracking-tight text-foreground dark:text-white">
                       {currentPersona.name}
                     </h2>
-                    <p className="font-mono text-[11px] text-zinc-500">
+                    <p className="font-mono text-[11px] text-muted-foreground dark:text-zinc-500">
                       {currentPersona.title} • Latency {currentPersona.latency} • Voice: {currentPersona.voice}
                     </p>
                   </div>
 
                 {/* RIGHT SIDE CONTEXT & AUDIO TELEMETRY WIDGETS */}
                 <div className="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 flex-col gap-3">
-                  <div className="rounded-xl bg-[#161616] border border-[#232323] p-3 w-[160px] shadow-sm">
-                    <p className="font-mono text-[10px] text-zinc-500 tracking-widest">AUDIO</p>
+                  <div className="rounded-xl bg-card/90 dark:bg-[#161616] border border-border dark:border-[#232323] p-3 w-[160px] shadow-sm">
+                    <p className="font-mono text-[10px] text-muted-foreground dark:text-zinc-500 tracking-widest">AUDIO</p>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[11px] text-zinc-300">Input</span>
-                      <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      <span className="text-[11px] text-foreground dark:text-zinc-300">Input</span>
+                      <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                         16kHz
                       </span>
                     </div>
-                    <div className="mt-2 h-1 w-full bg-[#232323] rounded-full overflow-hidden">
+                    <div className="mt-2 h-1 w-full bg-muted dark:bg-[#232323] rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-white transition-all duration-150"
+                        className="h-full bg-foreground dark:bg-white transition-all duration-150"
                         style={{
                           width: isRecording ? `${Math.max(10, Math.min(100, audioLevel))}%` : '68%',
                           animation: activeState === 'listening' && !isRecording ? 'shimmer 1.2s ease-in-out infinite' : 'none'
@@ -1483,9 +1483,9 @@ ${resumeText.substring(0, 10000)}
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-[#161616] border border-[#232323] p-3 w-[160px] shadow-sm">
-                    <p className="font-mono text-[10px] text-zinc-500 tracking-widest">CONTEXT</p>
-                    <p className="text-[11px] text-zinc-400 mt-2 leading-snug">
+                  <div className="rounded-xl bg-card/90 dark:bg-[#161616] border border-border dark:border-[#232323] p-3 w-[160px] shadow-sm">
+                    <p className="font-mono text-[10px] text-muted-foreground dark:text-zinc-500 tracking-widest">CONTEXT</p>
+                    <p className="text-[11px] text-muted-foreground dark:text-zinc-400 mt-2 leading-snug">
                       React, Node, System Design — tailored prompts active
                     </p>
                   </div>
@@ -1493,15 +1493,15 @@ ${resumeText.substring(0, 10000)}
               </div>
 
               {/* BOTTOM TRANSCRIPT & SUBTITLE CONSOLE */}
-              <div className="border-t border-[#1e1e1e] bg-[#0f0f0f] flex flex-col">
+              <div className="border-t border-border dark:border-[#1e1e1e] bg-muted/20 dark:bg-[#0f0f0f] flex flex-col">
                 
                 {/* Console Toolbar */}
-                <div className="h-9 px-4 md:px-5 flex items-center justify-between border-b border-[#1a1a1a]">
+                <div className="h-9 px-4 md:px-5 flex items-center justify-between border-b border-border/80 dark:border-[#1a1a1a]">
                   <div className="flex items-center gap-3">
-                    <p className="font-mono text-[10px] tracking-widest text-zinc-500">
+                    <p className="font-mono text-[10px] tracking-widest text-muted-foreground dark:text-zinc-500">
                       TRANSCRIPT • SUBTITLES
                     </p>
-                    <span className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+                    <span className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground dark:text-zinc-500">
                       <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
                       AUTO-SCROLL
                     </span>
@@ -1510,14 +1510,14 @@ ${resumeText.substring(0, 10000)}
                     <button
                       type="button"
                       onClick={handleClearTranscript}
-                      className="h-6 px-2.5 rounded-full bg-[#191919] border border-[#262626] text-[10px] font-mono text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+                      className="h-6 px-2.5 rounded-full bg-background dark:bg-[#191919] border border-border dark:border-[#262626] text-[10px] font-mono text-muted-foreground hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-200 transition cursor-pointer"
                     >
                       Clear
                     </button>
                     <button
                       type="button"
                       onClick={handleCopyTranscript}
-                      className="h-6 px-2.5 rounded-full bg-[#191919] border border-[#262626] text-[10px] font-mono text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+                      className="h-6 px-2.5 rounded-full bg-background dark:bg-[#191919] border border-border dark:border-[#262626] text-[10px] font-mono text-muted-foreground hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-200 transition cursor-pointer"
                     >
                       Copy
                     </button>
@@ -1531,18 +1531,18 @@ ${resumeText.substring(0, 10000)}
                 >
                   {messages.filter(m => m.role !== 'system').map((s) => (
                     <div key={s.id} className="flex gap-3 md:gap-4 text-[12.5px] md:text-[13px] leading-[1.6] group">
-                      <span className="font-mono text-[11px] text-zinc-600 mt-0.5 shrink-0 w-[38px]">
+                      <span className="font-mono text-[11px] text-muted-foreground/70 dark:text-zinc-600 mt-0.5 shrink-0 w-[38px]">
                         {s.time}
                       </span>
                       <span className={`shrink-0 font-mono text-[11px] font-medium tracking-wide px-1.5 py-0.5 rounded border h-fit mt-0.5 ${
                         s.label === 'AI' 
-                          ? 'bg-[#1b1b1b] border-[#262626] text-zinc-300' 
-                          : 'bg-white text-black border-white'
+                          ? 'bg-muted border-border text-foreground dark:bg-[#1b1b1b] dark:border-[#262626] dark:text-zinc-300' 
+                          : 'bg-primary text-primary-foreground border-primary dark:bg-white dark:text-black dark:border-white'
                       }`}>
                         {s.label}
                       </span>
-                      <span className="text-zinc-400">
-                        <span className="text-zinc-200 font-medium mr-1.5">{s.speaker}:</span>
+                      <span className="text-muted-foreground dark:text-zinc-400">
+                        <span className="text-foreground dark:text-zinc-200 font-medium mr-1.5">{s.speaker}:</span>
                         {s.text}
                       </span>
                     </div>
@@ -1551,21 +1551,21 @@ ${resumeText.substring(0, 10000)}
                   {/* Real-time In-flight Transcription / Recording Preview */}
                   {(isRecording || isProcessingAudio) && (
                     <div className="flex gap-3 md:gap-4 text-[12.5px] md:text-[13px] leading-[1.6] items-start animate-fade-in">
-                      <span className="font-mono text-[11px] text-[#facc15]/70 mt-0.5 shrink-0 w-[38px] flex items-center gap-1">
+                      <span className="font-mono text-[11px] text-amber-600 dark:text-[#facc15]/70 mt-0.5 shrink-0 w-[38px] flex items-center gap-1">
                         {formatTimer(elapsedSeconds)}
-                        <span className="h-1 w-1 rounded-full bg-[#facc15] animate-pulse" />
+                        <span className="h-1 w-1 rounded-full bg-amber-500 dark:bg-[#facc15] animate-pulse" />
                       </span>
-                      <span className="shrink-0 font-mono text-[11px] font-medium tracking-wide px-1.5 py-0.5 rounded bg-[#facc15]/10 border border-[#facc15]/20 text-[#facc15] h-fit mt-0.5">
+                      <span className="shrink-0 font-mono text-[11px] font-medium tracking-wide px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-[#facc15] h-fit mt-0.5">
                         Me
                       </span>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[#facc15]/90 font-[450]">
+                        <span className="text-amber-700 dark:text-[#facc15]/90 font-[450]">
                           {isRecording ? "Transcribing live voice (Hold Space)..." : "Transcribing audio (Muse Voice)..."}
                         </span>
-                        <span className="text-zinc-500 ml-2">
+                        <span className="text-muted-foreground dark:text-zinc-500 ml-2">
                           • {isRecording ? "Speak now into microphone..." : "Processing PCM buffer with Meta Muse ASR"}
                         </span>
-                        <span className="inline-block w-[2px] h-[14px] bg-[#facc15] ml-1 translate-y-[2px] animate-pulse" />
+                        <span className="inline-block w-[2px] h-[14px] bg-amber-500 dark:bg-[#facc15] ml-1 translate-y-[2px] animate-pulse" />
                       </div>
                     </div>
                   )}
@@ -1573,14 +1573,14 @@ ${resumeText.substring(0, 10000)}
                   {/* Interviewer Thinking In-flight Log */}
                   {isChatting && (
                     <div className="flex gap-3 md:gap-4 text-[12.5px] md:text-[13px] leading-[1.6] items-start animate-fade-in">
-                      <span className="font-mono text-[11px] text-zinc-600 mt-0.5 shrink-0 w-[38px]">
+                      <span className="font-mono text-[11px] text-muted-foreground/70 dark:text-zinc-600 mt-0.5 shrink-0 w-[38px]">
                         {formatTimer(elapsedSeconds)}
                       </span>
-                      <span className="shrink-0 font-mono text-[11px] font-medium tracking-wide px-1.5 py-0.5 rounded border border-[#262626] bg-[#1b1b1b] text-zinc-300 h-fit mt-0.5">
+                      <span className="shrink-0 font-mono text-[11px] font-medium tracking-wide px-1.5 py-0.5 rounded border border-border bg-muted text-foreground dark:border-[#262626] dark:bg-[#1b1b1b] dark:text-zinc-300 h-fit mt-0.5">
                         AI
                       </span>
-                      <div className="flex-1 min-w-0 flex items-center gap-2 text-zinc-400">
-                        <Loader2 className="size-3.5 animate-spin text-zinc-400" />
+                      <div className="flex-1 min-w-0 flex items-center gap-2 text-muted-foreground dark:text-zinc-400">
+                        <Loader2 className="size-3.5 animate-spin text-muted-foreground dark:text-zinc-400" />
                         <span className="italic">Interviewer is thinking (Meta Muse Spark)...</span>
                       </div>
                     </div>
@@ -1588,7 +1588,7 @@ ${resumeText.substring(0, 10000)}
                 </div>
 
                 {/* BOTTOM CONTROLS BAR (PUSH-TO-TALK & INPUT) */}
-                <div className="px-3 md:px-4 py-3 bg-[#0c0c0c] border-t border-[#1a1a1a] flex items-center gap-2 md:gap-3">
+                <div className="px-3 md:px-4 py-3 bg-card dark:bg-[#0c0c0c] border-t border-border dark:border-[#1a1a1a] flex items-center gap-2 md:gap-3">
                   
                   {/* Push-to-Talk Button (Hold Space or Hold Pointer to Speak) */}
                   <button
@@ -1625,10 +1625,10 @@ ${resumeText.substring(0, 10000)}
                     className={`h-10 md:h-11 px-4 md:px-5 rounded-full text-[12.5px] md:text-[13px] font-medium flex items-center gap-2 transition shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset] cursor-pointer select-none ${
                       isRecording 
                         ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-                        : 'bg-white hover:bg-zinc-100 text-black'
+                        : 'bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-white dark:hover:bg-zinc-100 dark:text-black dark:shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset]'
                     }`}
                   >
-                    <span className={`h-5 w-5 rounded-full grid place-items-center ${isRecording ? 'bg-white text-red-600' : 'bg-black text-white'}`}>
+                    <span className={`h-5 w-5 rounded-full grid place-items-center ${isRecording ? 'bg-white text-red-600' : 'bg-primary-foreground text-primary dark:bg-black dark:text-white'}`}>
                       <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                         <path d="M8 2a2 2 0 0 0-2 2v4a2 2 0 1 0 4 0V4a2 2 0 0 0-2-2Z" fill="currentColor" />
                         <path d="M11 8a3 3 0 0 1-6 0M8 12v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -1640,7 +1640,7 @@ ${resumeText.substring(0, 10000)}
                     <span className="md:hidden">
                       {isRecording ? "Release" : "Hold"}
                     </span>
-                    <span className="hidden md:inline-flex ml-1 h-5 px-1.5 rounded bg-black/10 font-mono text-[10px] items-center">
+                    <span className="hidden md:inline-flex ml-1 h-5 px-1.5 rounded bg-primary-foreground/20 dark:bg-black/10 font-mono text-[10px] items-center">
                       SPACE
                     </span>
                   </button>
@@ -1659,7 +1659,7 @@ ${resumeText.substring(0, 10000)}
                           handleSendMessage();
                         }
                       }}
-                      className="h-10 md:h-11 w-full rounded-full bg-[#171717] border border-[#262626] pl-4 pr-[88px] text-[13px] text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#2e2e2e] focus:bg-[#1a1a1a] transition"
+                      className="h-10 md:h-11 w-full rounded-full bg-background dark:bg-[#171717] border border-border dark:border-[#262626] pl-4 pr-[88px] text-[13px] text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-500 outline-none focus:border-ring focus:bg-background dark:focus:border-[#2e2e2e] dark:focus:bg-[#1a1a1a] transition"
                     />
                     <div className="absolute right-1.5 top-1.5 bottom-1.5 flex items-center gap-1">
                       <button
@@ -1671,7 +1671,7 @@ ${resumeText.substring(0, 10000)}
                         }}
                         title={voiceMode ? "Mute Voice Output" : "Enable Voice Output"}
                         className={`h-8 w-8 grid place-items-center rounded-full transition cursor-pointer ${
-                          voiceMode ? 'bg-[#232323] hover:bg-[#2a2a2a] text-emerald-400' : 'bg-[#232323] hover:bg-[#2a2a2a] text-zinc-500'
+                          voiceMode ? 'bg-muted hover:bg-muted/80 text-emerald-600 dark:bg-[#232323] dark:hover:bg-[#2a2a2a] dark:text-emerald-400' : 'bg-muted hover:bg-muted/80 text-muted-foreground dark:bg-[#232323] dark:hover:bg-[#2a2a2a] dark:text-zinc-500'
                         }`}
                       >
                         {voiceMode ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
@@ -1680,7 +1680,7 @@ ${resumeText.substring(0, 10000)}
                         type="button"
                         onClick={() => handleSendMessage()}
                         disabled={!inputMsg.trim() || isChatting}
-                        className="h-8 px-3 rounded-full bg-white text-black text-[12px] font-medium hover:bg-zinc-100 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 dark:bg-white dark:text-black dark:hover:bg-zinc-100 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                       >
                         Send
                       </button>
@@ -1689,11 +1689,11 @@ ${resumeText.substring(0, 10000)}
 
                   {/* Telemetry Bitrate and Language Badge */}
                   <div className="hidden md:flex items-center gap-2 shrink-0">
-                    <span className="h-7 px-2.5 rounded-full bg-[#171717] border border-[#232323] text-[10px] font-mono text-zinc-500 flex items-center gap-1.5">
+                    <span className="h-7 px-2.5 rounded-full bg-background dark:bg-[#171717] border border-border dark:border-[#232323] text-[10px] font-mono text-muted-foreground dark:text-zinc-500 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       128kbps
                     </span>
-                    <span className="h-7 px-2.5 rounded-full bg-[#171717] border border-[#232323] text-[10px] font-mono text-zinc-500">
+                    <span className="h-7 px-2.5 rounded-full bg-background dark:bg-[#171717] border border-border dark:border-[#232323] text-[10px] font-mono text-muted-foreground dark:text-zinc-500">
                       EN
                     </span>
                   </div>
@@ -1703,13 +1703,13 @@ ${resumeText.substring(0, 10000)}
             </div>
 
             {/* FOOTER KEYBOARD SHORTCUTS HINT */}
-            <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-mono text-zinc-600">
+            <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-mono text-muted-foreground dark:text-zinc-600">
               <span>Press</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1a] border border-[#262626] text-zinc-400">/</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted dark:bg-[#1a1a1a] border border-border dark:border-[#262626] text-foreground dark:text-zinc-400">/</kbd>
               <span>to focus •</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1a] border border-[#262626] text-zinc-400">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted dark:bg-[#1a1a1a] border border-border dark:border-[#262626] text-foreground dark:text-zinc-400">Esc</kbd>
               <span>to cancel • Hold</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-[#1a1a1a] border border-[#262626] text-zinc-400">Space</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted dark:bg-[#1a1a1a] border border-border dark:border-[#262626] text-foreground dark:text-zinc-400">Space</kbd>
               <span>to speak</span>
             </div>
         </div>

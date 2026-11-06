@@ -44,13 +44,13 @@ export function DashboardPreview() {
   return (
     <div className="w-[calc(100vw-32px)] md:w-[1160px] mx-auto">
       {/* Glassmorphism frame with heavy soft emerald-tinted shadow */}
-      <div className="rounded-2xl p-2 border border-white/10 bg-black/40 backdrop-blur-md shadow-2xl shadow-emerald-900/20 ring-1 ring-emerald-400/10">
+      <div className="dark rounded-2xl p-2 border border-white/10 bg-black/40 backdrop-blur-md shadow-2xl shadow-emerald-900/20 ring-1 ring-emerald-400/10">
         
         {/* Main Mock Interview Room Canvas */}
         <div className="rounded-xl bg-[#090c0a]/90 border border-white/10 overflow-hidden text-left relative shadow-2xl flex flex-col justify-between select-none">
           
           {/* Subtle Grid Pattern inside the room */}
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-[linear-gradient(to_right,#34d399_1px,transparent_1px),linear-gradient(to_bottom,#34d399_1px,transparent_1px)] bg-[size:32px_32px]" />
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-10 bg-[linear-gradient(to_right,rgba(52,211,153,0.35)_1px,transparent_1px),linear-gradient(to_bottom,rgba(52,211,153,0.35)_1px,transparent_1px)] bg-[size:32px_32px]" />
 
           {/* TOP SESSION HEADER BAR */}
           <motion.div

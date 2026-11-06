@@ -789,15 +789,36 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          await supabase.auth.signOut();
+          await fetch('/api/auth/signout', { method: 'POST' });
+        } catch (err) {
+          console.warn('[Auth] Server signout notice:', err);
+        }
+
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
         } catch (err) {
           console.warn('[Auth] Sign out error:', err);
+        }
+
+        if (typeof document !== 'undefined') {
+          document.cookie.split(';').forEach((c) => {
+            const eqPos = c.indexOf('=');
+            const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
+            if (name.startsWith('sb-') || name.includes('auth-token')) {
+              document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+              document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+            }
+          });
         }
 
         set({
           user: null,
           isAuthenticated: false,
         });
+
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login?signout=1';
+        }
       },
 
       prepareAccountSwitch: async () => {

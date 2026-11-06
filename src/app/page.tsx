@@ -16,7 +16,7 @@ export default function LandingPage() {
   return (
     <div 
       id="top"
-      className="min-h-screen bg-[#0f1211] text-[#e7eceb] relative overflow-hidden pb-0 font-sans selection:bg-[#78fcd6] selection:text-[#0d0f0e]"
+      className="dark min-h-screen bg-[#0f1211] text-[#e7eceb] relative overflow-hidden pb-0 font-sans selection:bg-[#78fcd6] selection:text-[#0d0f0e]"
       style={{
         ['--background' as any]: '210 11% 7%',
         ['--foreground' as any]: '160 14% 93%',
@@ -37,14 +37,14 @@ export default function LandingPage() {
         <main className="max-w-[1320px] mx-auto relative">
           <HeroSection />
           {/* Dashboard Preview Wrapper with Recreated InterVibe Interview Room */}
-          <div id="preview-card" className="absolute bottom-[-460px] sm:bottom-[-520px] md:bottom-[-600px] lg:bottom-[-620px] left-1/2 transform -translate-x-1/2 z-30">
+          <div id="preview-card" className="absolute bottom-[-480px] sm:bottom-[-540px] md:bottom-[-620px] lg:bottom-[-650px] left-1/2 transform -translate-x-1/2 z-30">
             <DemoCardEntrance>
               <DashboardPreview />
             </DemoCardEntrance>
           </div>
         </main>
 
-        <ZoomSection id="meta-ai-models-section" className="relative z-10 max-w-[1320px] mx-auto px-6 mt-[540px] sm:mt-[600px] md:mt-[680px] lg:mt-[700px]">
+        <ZoomSection id="meta-ai-models-section" className="relative z-10 max-w-[1320px] mx-auto px-6 mt-[560px] sm:mt-[620px] md:mt-[700px] lg:mt-[740px]">
           <SocialProof />
         </ZoomSection>
 

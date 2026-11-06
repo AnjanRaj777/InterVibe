@@ -11,6 +11,24 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const searchParams = request.nextUrl.searchParams;
 
+  // Handle explicit signout flag (?signout=1 or ?logout=1)
+  const isExplicitSignOut = searchParams.has('signout') || searchParams.has('logout');
+  if (isExplicitSignOut) {
+    // Delete all sb-* auth session cookies from response
+    const allCookies = request.cookies.getAll();
+    for (const cookie of allCookies) {
+      if (cookie.name.startsWith('sb-') || cookie.name.includes('auth-token')) {
+        response.cookies.delete(cookie.name);
+      }
+    }
+    // If an unauthenticated or signing out user is on /dashboard, bounce to /auth/login
+    if (pathname.startsWith('/dashboard')) {
+      const loginUrl = new URL('/auth/login?signout=1', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+    return response;
+  }
+
   // If Supabase email confirmation or OAuth falls back to the root Site URL (/?code=... or /?token_hash=...),
   // forward the request to /auth/callback so the session is exchanged properly.
   if (
@@ -65,17 +83,18 @@ export async function proxy(request: NextRequest) {
   }
 
   // If user is already authenticated, redirect away from login/signup to dashboard
-  // unless they explicitly opened the account switcher (?switch=1)
+  // unless they explicitly opened the account switcher (?switch=1) or signed out
   const isSwitchingAccount = searchParams.get('switch') === '1';
   if (
     user &&
     !isSwitchingAccount &&
+    !isExplicitSignOut &&
     (pathname === '/auth/login' ||
       pathname === '/auth/signup' ||
       pathname === '/login' ||
       pathname === '/signup')
   ) {
-    return NextResponse.redirect(new URL('/dashboard/interview', request.url));
+    return NextResponse.redirect(new URL('/dashboard/overview', request.url));
   }
 
   return response;

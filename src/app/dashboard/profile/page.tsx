@@ -67,6 +67,7 @@ export default function ProfilePage() {
   const [tempAvatarUrl, setTempAvatarUrl] = useState('');
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Tech Stack Tags
@@ -458,11 +459,24 @@ export default function ProfilePage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
+                    disabled={isSigningOut}
                     className="flex-1 sm:w-auto h-9 text-xs font-mono text-muted-foreground hover:text-red-500 hover:border-red-500/30 gap-1.5 rounded-xl cursor-pointer"
-                    onClick={() => logout()}
+                    onClick={async () => {
+                      setIsSigningOut(true);
+                      try {
+                        await logout();
+                      } catch {
+                        setIsSigningOut(false);
+                      }
+                    }}
                     title="Sign Out"
                   >
-                    <LogOut className="size-3.5" /> Sign Out
+                    {isSigningOut ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <LogOut className="size-3.5" />
+                    )}
+                    {isSigningOut ? 'Signing out...' : 'Sign Out'}
                   </Button>
                 </div>
               </div>

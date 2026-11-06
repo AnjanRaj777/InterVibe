@@ -44,8 +44,15 @@ export default function LoginPage() {
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null);
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync any active browser session into savedAccounts on mount
+  // Sync any active browser session into savedAccounts on mount (unless just signed out)
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('signout') === '1') {
+        toast.success('Signed out successfully');
+        return;
+      }
+    }
     prepareAccountSwitch();
   }, [prepareAccountSwitch]);
 

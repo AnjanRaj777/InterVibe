@@ -1,7 +1,6 @@
-"use client"
+"use client";
 
-import React, { useEffect } from "react"
-import { Play } from "lucide-react"
+import React, { useEffect } from "react";
 import {
   motion,
   useMotionValue,
@@ -9,529 +8,174 @@ import {
   useScroll,
   useSpring,
   useTransform,
-} from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Header } from "./header"
-import Link from "next/link"
-import { ZOOM } from "./motion-config"
-import { DemoVideoButton } from "./demo-video-modal"
+} from "framer-motion";
+import { Header } from "./header";
+import Link from "next/link";
+import { ZOOM } from "./motion-config";
+import { DemoVideoButton } from "./demo-video-modal";
+import { ArrowRight } from "lucide-react";
 
 export function HeroSection() {
-  const reduceMotion = useReducedMotion()
-  const { scrollY } = useScroll()
-  const h = ZOOM.hero
-  const g = ZOOM.heroBg
+  const reduceMotion = useReducedMotion();
+  const { scrollY } = useScroll();
+  const h = ZOOM.hero;
+  const g = ZOOM.heroBg;
 
   // Hero "camera dolly": background flies toward the viewer, content recedes.
-  const bgScale = useSpring(useTransform(scrollY, h.range, [1, h.bgScale]), ZOOM.spring)
-  const bgOpacity = useSpring(useTransform(scrollY, h.range, [1, h.bgOpacity]), ZOOM.spring)
-  const contentScale = useSpring(useTransform(scrollY, h.range, [1, h.contentScale]), ZOOM.spring)
-  const contentY = useSpring(useTransform(scrollY, h.range, [0, h.contentY]), ZOOM.spring)
-  const contentOpacity = useSpring(useTransform(scrollY, h.range, [1, 0]), ZOOM.spring)
+  const bgScale = useSpring(useTransform(scrollY, h.range, [1, h.bgScale]), ZOOM.spring);
+  const bgOpacity = useSpring(useTransform(scrollY, h.range, [1, h.bgOpacity]), ZOOM.spring);
+  const contentScale = useSpring(useTransform(scrollY, h.range, [1, h.contentScale]), ZOOM.spring);
+  const contentY = useSpring(useTransform(scrollY, h.range, [0, h.contentY]), ZOOM.spring);
+  const contentOpacity = useSpring(useTransform(scrollY, h.range, [1, 0]), ZOOM.spring);
 
   // Pointer parallax: grid gently drifts opposite to the cursor.
-  const pointerX = useMotionValue(0)
-  const pointerY = useMotionValue(0)
-  const parallaxX = useSpring(pointerX, { stiffness: 40, damping: 20, mass: 0.6 })
-  const parallaxY = useSpring(pointerY, { stiffness: 40, damping: 20, mass: 0.6 })
+  const pointerX = useMotionValue(0);
+  const pointerY = useMotionValue(0);
+  const parallaxX = useSpring(pointerX, { stiffness: 40, damping: 20, mass: 0.6 });
+  const parallaxY = useSpring(pointerY, { stiffness: 40, damping: 20, mass: 0.6 });
 
   useEffect(() => {
-    if (reduceMotion) return
+    if (reduceMotion) return;
     const onMove = (e: PointerEvent) => {
-      const nx = e.clientX / window.innerWidth - 0.5
-      const ny = e.clientY / window.innerHeight - 0.5
-      pointerX.set(-nx * 2 * g.mouseRange)
-      pointerY.set(-ny * 2 * g.mouseRange)
-    }
-    window.addEventListener("pointermove", onMove, { passive: true })
-    return () => window.removeEventListener("pointermove", onMove)
-  }, [reduceMotion, pointerX, pointerY, g.mouseRange])
+      const nx = e.clientX / window.innerWidth - 0.5;
+      const ny = e.clientY / window.innerHeight - 0.5;
+      pointerX.set(-nx * 2 * g.mouseRange);
+      pointerY.set(-ny * 2 * g.mouseRange);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [reduceMotion, pointerX, pointerY, g.mouseRange]);
 
   const bgStyle = reduceMotion
     ? undefined
-    : { scale: bgScale, opacity: bgOpacity, willChange: "transform, opacity" }
+    : { scale: bgScale, opacity: bgOpacity, willChange: "transform, opacity" };
   const contentStyle = reduceMotion
     ? undefined
-    : { scale: contentScale, y: contentY, opacity: contentOpacity, willChange: "transform, opacity" }
+    : { scale: contentScale, y: contentY, opacity: contentOpacity, willChange: "transform, opacity" };
 
   return (
     <section
-      className="flex flex-col items-center text-center relative mx-auto rounded-2xl overflow-hidden my-6 py-0 px-4
-         w-full h-[400px] md:w-[1220px] md:h-[600px] lg:h-[810px] md:px-0"
+      className="flex flex-col items-center text-center relative mx-auto rounded-3xl overflow-hidden my-4 sm:my-6 py-0 px-3 sm:px-6
+         w-full min-h-[520px] md:w-[1240px] md:h-[640px] lg:h-[760px] md:px-0 border border-white/[0.08] bg-gradient-to-b from-[#0d1210] via-[#090d0b] to-[#070a08] shadow-[0_25px_80px_-20px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)]"
     >
-      {/* SVG Background – layered motion:
-          1) cinematic load zoom-out  2) scroll dolly  3) ambient drift  4) pointer parallax */}
+      {/* Dynamic Atmospheric Canvas Background */}
       <motion.div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
         initial={reduceMotion ? false : { scale: g.loadFromScale }}
         animate={{ scale: 1 }}
         transition={{ duration: g.loadDuration, ease: g.loadEase }}
       >
-      <motion.div className="absolute inset-0" style={bgStyle}>
-      <motion.div
-        className="absolute -inset-6"
-        animate={
-          reduceMotion
-            ? undefined
-            : {
-                x: [0, g.driftRange, -g.driftRange * 0.6, 0],
-                y: [0, -g.driftRange * 0.7, g.driftRange * 0.5, 0],
-              }
-        }
-        transition={{ duration: g.driftDuration, ease: "easeInOut", repeat: Infinity }}
-      >
-      <motion.div
-        className="absolute inset-0"
-        style={reduceMotion ? undefined : { x: parallaxX, y: parallaxY, willChange: "transform" }}
-      >
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 1220 810"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <g clipPath="url(#clip0_186_1134)">
-            <mask
-              id="mask0_186_1134"
-              style={{ maskType: "alpha" }}
-              maskUnits="userSpaceOnUse"
-              x="10"
-              y="-1"
-              width="1200"
-              height="812"
+        <motion.div className="absolute inset-0" style={bgStyle}>
+          <motion.div
+            className="absolute -inset-8"
+            animate={
+              reduceMotion
+                ? undefined
+                : {
+                    x: [0, g.driftRange, -g.driftRange * 0.6, 0],
+                    y: [0, -g.driftRange * 0.7, g.driftRange * 0.5, 0],
+                  }
+            }
+            transition={{ duration: g.driftDuration, ease: "easeInOut", repeat: Infinity }}
+          >
+            <motion.div
+              className="absolute inset-0"
+              style={reduceMotion ? undefined : { x: parallaxX, y: parallaxY, willChange: "transform" }}
             >
-              <rect x="10" y="-0.84668" width="1200" height="811.693" fill="url(#paint0_linear_186_1134)" />
-            </mask>
-            <g mask="url(#mask0_186_1134)">
-              {/* Grid Rectangles */}
-              {[...Array(35)].map((_, i) => (
-                <React.Fragment key={`row1-${i}`}>
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="9.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="45.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="81.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="117.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="153.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="189.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="225.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="261.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="297.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="333.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="369.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="405.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="441.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="477.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="513.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="549.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="585.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="621.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="657.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="693.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="729.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={-20.0891 + i * 36}
-                    y="765.2"
-                    width="35.6"
-                    height="35.6"
-                    stroke="hsl(var(--foreground))"
-                    strokeOpacity="0.11"
-                    strokeWidth="0.4"
-                    strokeDasharray="2 2"
-                  />
-                </React.Fragment>
-              ))}
-              {/* Specific Rectangles with fill */}
-              <rect x="699.711" y="81" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.08" />
-              <rect x="195.711" y="153" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="1023.71" y="153" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="123.711" y="225" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="1095.71" y="225" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="951.711" y="297" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="231.711" y="333" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.07" />
-              <rect x="303.711" y="405" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.07" />
-              <rect x="87.7109" y="405" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="519.711" y="405" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.08" />
-              <rect x="771.711" y="405" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.09" />
-              <rect x="591.711" y="477" width="36" height="36" fill="hsl(var(--foreground))" fillOpacity="0.07" />
-            </g>
+              {/* Celestial Top Radial Nebula */}
+              <div className="absolute -top-[25%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-[radial-gradient(ellipse_at_center,_rgba(16,185,129,0.25)_0%,_rgba(6,182,212,0.12)_40%,_transparent_72%)] blur-3xl opacity-90" />
 
-            <g filter="url(#filter0_f_186_1134)">
-              <path
-                d="M1447.45 -87.0203V-149.03H1770V1248.85H466.158V894.269C1008.11 894.269 1447.45 454.931 1447.45 -87.0203Z"
-                fill="url(#paint1_linear_186_1134)"
+              {/* Ambient Spotlight Cone */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-gradient-to-b from-emerald-400/20 via-teal-500/5 to-transparent blur-2xl" />
+
+              {/* Delicate Precision Engineering Grid (fades out at edges) */}
+              <div
+                className="absolute inset-0 opacity-[0.16]"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(to right, rgba(52, 211, 153, 0.4) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(52, 211, 153, 0.4) 1px, transparent 1px)
+                  `,
+                  backgroundSize: "48px 48px",
+                  maskImage: "radial-gradient(ellipse 75% 65% at 50% 32%, black 20%, transparent 80%)",
+                  WebkitMaskImage: "radial-gradient(ellipse 75% 65% at 50% 32%, black 20%, transparent 80%)",
+                }}
               />
-            </g>
 
-            <g filter="url(#filter1_f_186_1134)">
-              <path
-                d="M1383.45 -151.02V-213.03H1706V1184.85H402.158V830.269C944.109 830.269 1383.45 390.931 1383.45 -151.02Z"
-                fill="url(#paint2_linear_186_1134)"
-                fillOpacity="0.69"
-              />
-            </g>
-
-            <g style={{ mixBlendMode: "lighten" }} filter="url(#filter2_f_186_1134)">
-              <path
-                d="M1567.45 -231.02V-293.03H1890V1104.85H586.158V750.269C1128.11 750.269 1567.45 310.931 1567.45 -231.02Z"
-                fill="url(#paint3_linear_186_1134)"
-              />
-            </g>
-
-            <g style={{ mixBlendMode: "overlay" }} filter="url(#filter3_f_186_1134)">
-              <path
-                d="M65.625 750.269H284.007C860.205 750.269 1327.31 283.168 1327.31 -293.03H1650V1104.85H65.625V750.269Z"
-                fill="url(#paint4_radial_186_1134)"
-                fillOpacity="0.64"
-              />
-            </g>
-          </g>
-
-          <rect
-            x="0.5"
-            y="0.5"
-            width="1219"
-            height="809"
-            rx="15.5"
-            stroke="hsl(var(--foreground))"
-            strokeOpacity="0.06"
-          />
-
-          <defs>
-            <filter
-              id="filter0_f_186_1134"
-              x="147.369"
-              y="-467.818"
-              width="1941.42"
-              height="2035.46"
-              filterUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              <feFlood floodOpacity="0" result="BackgroundImageFix" />
-              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <feGaussianBlur stdDeviation="159.394" result="effect1_foregroundBlur_186_1134" />
-            </filter>
-            <filter
-              id="filter1_f_186_1134"
-              x="-554.207"
-              y="-1169.39"
-              width="3216.57"
-              height="3310.61"
-              filterUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              <feFlood floodOpacity="0" result="BackgroundImageFix" />
-              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <feGaussianBlur stdDeviation="478.182" result="effect1_foregroundBlur_186_1134" />
-            </filter>
-            <filter
-              id="filter2_f_186_1134"
-              x="426.762"
-              y="-452.424"
-              width="1622.63"
-              height="1716.67"
-              filterUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              <feFlood floodOpacity="0" result="BackgroundImageFix" />
-              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <feGaussianBlur stdDeviation="79.6969" result="effect1_foregroundBlur_186_1134" />
-            </filter>
-            <filter
-              id="filter3_f_186_1134"
-              x="-253.163"
-              y="-611.818"
-              width="2221.95"
-              height="2035.46"
-              filterUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              <feFlood floodOpacity="0" result="BackgroundImageFix" />
-              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <feGaussianBlur stdDeviation="159.394" result="effect1_foregroundBlur_186_1134" />
-            </filter>
-            <linearGradient
-              id="paint0_linear_186_1134"
-              x1="35.0676"
-              y1="23.6807"
-              x2="903.8"
-              y2="632.086"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="hsl(var(--foreground))" stopOpacity="0" />
-              <stop offset="1" stopColor="hsl(var(--muted-foreground))" />
-            </linearGradient>
-            <linearGradient
-              id="paint1_linear_186_1134"
-              x1="1118.08"
-              y1="-149.03"
-              x2="1118.08"
-              y2="1248.85"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="hsl(var(--foreground))" />
-              <stop offset="0.578125" stopColor="hsl(var(--primary-light))" />
-              <stop offset="1" stopColor="hsl(var(--primary))" />
-            </linearGradient>
-            <linearGradient
-              id="paint2_linear_186_1134"
-              x1="1054.08"
-              y1="-213.03"
-              x2="1054.08"
-              y2="1184.85"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="hsl(var(--foreground))" />
-              <stop offset="0.578125" stopColor="hsl(var(--primary-light))" />
-              <stop offset="1" stopColor="hsl(var(--primary))" />
-            </linearGradient>
-            <linearGradient
-              id="paint3_linear_186_1134"
-              x1="1238.08"
-              y1="-293.03"
-              x2="1238.08"
-              y2="1104.85"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="hsl(var(--foreground))" />
-              <stop offset="0.578125" stopColor="hsl(var(--primary-light))" />
-              <stop offset="1" stopColor="hsl(var(--primary))" />
-            </linearGradient>
-            <radialGradient
-              id="paint4_radial_186_1134"
-              cx="0"
-              cy="0"
-              r="1"
-              gradientUnits="userSpaceOnUse"
-              gradientTransform="translate(989.13 557.24) rotate(47.9516) scale(466.313 471.424)"
-            >
-              <stop stopColor="hsl(var(--foreground))" />
-              <stop offset="0.157789" stopColor="hsl(var(--primary-light))" />
-              <stop offset="1" stopColor="hsl(var(--primary))" />
-            </radialGradient>
-            <clipPath id="clip0_186_1134">
-              <rect width="1220" height="810" rx="16" fill="hsl(var(--foreground))" />
-            </clipPath>
-          </defs>
-        </svg>
-      </motion.div>
-      </motion.div>
-      </motion.div>
+              {/* Faint Concentric Orbitals */}
+              <div className="absolute left-1/2 top-48 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full border border-emerald-500/10 pointer-events-none" />
+              <div className="absolute left-1/2 top-48 -translate-x-1/2 -translate-y-1/2 w-[820px] h-[820px] rounded-full border border-emerald-500/[0.05] pointer-events-none" />
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </motion.div>
 
-      {/* Header positioned at top of hero container */}
-      <div className="absolute top-0 left-0 right-0 z-20">
+      {/* Floating Island Header */}
+      <div className="absolute top-0 left-0 right-0 z-30">
         <Header />
       </div>
 
-      <motion.div className="relative z-10 flex flex-col items-center w-full" style={contentStyle}>
-      <div className="relative z-10 space-y-4 md:space-y-5 lg:space-y-6 mb-6 md:mb-7 lg:mb-9 max-w-md md:max-w-[640px] lg:max-w-[740px] mt-16 md:mt-[120px] lg:mt-[160px] px-4">
-        <h1 className="text-foreground text-3xl md:text-4xl lg:text-6xl font-semibold leading-tight tracking-tight">
-          Unleash the Interview That Hires You
-        </h1>
-        <p className="text-muted-foreground text-base md:text-lg font-medium leading-relaxed max-w-2xl mx-auto">
-          Real AI humans who interview like FAANG. Practice with voice, get scored by Muse, and walk in vibe-ready.
-        </p>
-      </div>
+      {/* Main Hero Typography & Call-To-Action Content */}
+      <motion.div className="relative z-10 flex flex-col items-center w-full px-4" style={contentStyle}>
+        <div className="relative z-10 space-y-3 md:space-y-4 max-w-md sm:max-w-xl md:max-w-3xl lg:max-w-4xl mt-14 sm:mt-16 md:mt-20 lg:mt-20">
+          
+          {/* Innovation Pill Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-mono backdrop-blur-md shadow-[0_0_16px_rgba(16,185,129,0.15)] hover:border-emerald-400/40 hover:bg-emerald-500/15 transition-all cursor-pointer group"
+          >
+            <span className="flex size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-medium tracking-wide">Next-Gen Realtime 3D AI Interviewers</span>
+            <span className="text-emerald-400/70 font-sans group-hover:translate-x-0.5 transition-transform text-xs">→</span>
+          </motion.div>
 
-      <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-        <Link href="/auth/signup">
-          <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-7 sm:px-8 py-3 rounded-full font-medium text-sm sm:text-base shadow-lg ring-1 ring-white/10 hover:ring-emerald-300/40 cursor-pointer transition-all duration-300 hover:shadow-[0_0_24px_rgba(120,252,214,0.35)] hover:-translate-y-0.5">
-            Start Your First Mock - Free
-          </Button>
-        </Link>
-        <DemoVideoButton videoSrc="https://youtu.be/RlSbHkXWL0c" />
-      </div>
+          {/* Main Headline (Clean natural wrap, high contrast) */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-[-0.03em] leading-[1.1] text-balance max-w-3xl mx-auto">
+            <span className="bg-gradient-to-b from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent">
+              Unleash the Interview{" "}
+            </span>
+            <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(52,211,153,0.3)]">
+              That Hires You
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-neutral-300/90 text-sm sm:text-base md:text-lg font-normal leading-relaxed max-w-xl mx-auto text-balance tracking-tight">
+            Real 3D AI humans who interview like FAANG engineering leads. Voice-first, latency-free, and scored live by Meta Muse Spark.
+          </p>
+        </div>
+
+        {/* CTA Actions */}
+        <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 md:mt-7">
+          <Link href="/auth/signup">
+            <button className="group relative overflow-hidden bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-300 text-neutral-950 font-semibold px-6 sm:px-7 py-3 rounded-full text-xs sm:text-sm shadow-[0_0_24px_rgba(52,211,153,0.35),inset_0_1px_0_rgba(255,255,255,0.6)] hover:shadow-[0_0_36px_rgba(52,211,153,0.55)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-2 cursor-pointer">
+              <span>Start Your First Mock — Free</span>
+              <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </Link>
+          <DemoVideoButton videoSrc="https://youtu.be/RlSbHkXWL0c" />
+        </div>
+
+        {/* Micro Trust Indicators (Compact inline, no vertical overlap) */}
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-4 text-[11px] font-mono text-neutral-400/80">
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-emerald-400" />
+            320ms Voice Latency
+          </span>
+          <span className="text-neutral-600 hidden sm:inline">•</span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-cyan-400" />
+            Photorealistic 3D Avatars
+          </span>
+          <span className="text-neutral-600 hidden sm:inline">•</span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-teal-400" />
+            No Credit Card Required
+          </span>
+        </div>
       </motion.div>
     </section>
-  )
+  );
 }

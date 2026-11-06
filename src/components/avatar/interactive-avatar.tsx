@@ -693,7 +693,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
       <motion.div
         variants={entranceStagger ? stageVariants : undefined}
         custom={STAGE.pills}
-        className="mb-2 flex items-center gap-2 p-1 rounded-full bg-[#141414] border border-[#262626] shadow-md z-20"
+        className="mb-2 flex items-center gap-2 p-1 rounded-full bg-muted/80 dark:bg-[#141414] border border-border dark:border-[#262626] shadow-md z-20"
       >
         <button
           type="button"
@@ -704,7 +704,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
               : 'text-zinc-400 hover:text-white hover:bg-white/5'
           }`}
         >
-          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <Sparkles className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
           <span>3D Human Avatar (Active)</span>
           {perxonaConfig?.enabled && (
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
@@ -720,7 +720,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
               : 'text-zinc-400 hover:text-white hover:bg-white/5'
           }`}
         >
-          <Radio className="w-3 h-3 text-zinc-400" />
+          <Radio className="w-3 h-3 text-muted-foreground dark:text-zinc-400" />
           <span>2D Minimal</span>
         </button>
       </motion.div>
@@ -735,7 +735,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
         <div className="relative w-[340px] h-[370px] md:w-[440px] md:h-[430px] flex items-center justify-center">
           {perxonaLoaded && perxonaConfig?.enabled ? (
             /* Live XRSPACE Perxona <sv-presenter> Web Component */
-            <div className="relative w-full h-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#181818]/60 to-[#0e0e0e]/80 border border-[#2b2b2b] shadow-2xl flex items-center justify-center">
+            <div className="relative w-full h-full rounded-2xl overflow-hidden bg-gradient-to-b from-muted/50 to-muted dark:from-[#181818]/60 dark:to-[#0e0e0e]/80 border border-border dark:border-[#2b2b2b] shadow-2xl flex items-center justify-center">
               {/* @ts-ignore - custom web component from Perxona SDK */}
               <sv-presenter
                 ref={presenterRef}
@@ -743,7 +743,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
                 publishable-key={perxonaConfig.publishableKey}
                 base-url={perxonaConfig.baseUrl}
               />
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono text-zinc-300">
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 dark:bg-black/60 backdrop-blur-md border border-border dark:border-white/10 text-[10px] font-mono text-foreground/80 dark:text-zinc-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>XRSPACE Behavior AI™ • 60 FPS</span>
               </div>
@@ -753,9 +753,9 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
             <div className="relative w-full h-full flex flex-col items-center justify-center">
               {/* Loading indicator while GLB loads */}
               {modelLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#121212]/80 backdrop-blur-sm rounded-2xl z-20">
-                  <Loader2 className="w-7 h-7 text-cyan-400 animate-spin" />
-                  <p className="text-xs font-mono text-zinc-400">Loading 3D Human Avatar...</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/80 dark:bg-[#121212]/80 backdrop-blur-sm rounded-2xl z-20">
+                  <Loader2 className="w-7 h-7 text-cyan-600 dark:text-cyan-400 animate-spin" />
+                  <p className="text-xs font-mono text-muted-foreground dark:text-zinc-400">Loading 3D Human Avatar...</p>
                 </div>
               )}
 
@@ -766,7 +766,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
               />
 
               {/* Dynamic Status Pill */}
-              <div className="absolute bottom-1 flex items-center gap-2 px-3 py-1 rounded-full bg-[#181818]/90 backdrop-blur-md border border-[#2b2b2b] text-[11px] font-mono text-zinc-300 shadow">
+              <div className="absolute bottom-1 flex items-center gap-2 px-3 py-1 rounded-full bg-background/90 dark:bg-[#181818]/90 backdrop-blur-md border border-border dark:border-[#2b2b2b] text-[11px] font-mono text-foreground/80 dark:text-zinc-300 shadow-sm">
                 <span
                   className={`w-2 h-2 rounded-full ${
                     activeState === 'speaking' || audioPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-400'
@@ -785,21 +785,21 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
             {activeState === 'speaking' && (
               <>
                 <div
-                  className="absolute -inset-[30px] rounded-full border border-white/10"
+                  className="absolute -inset-[30px] rounded-full border border-foreground/10 dark:border-white/10"
                   style={{ animation: 'pulseRing 2.2s ease-out infinite' }}
                 />
                 <div
-                  className="absolute -inset-[60px] rounded-full border border-white/[0.06]"
+                  className="absolute -inset-[60px] rounded-full border border-foreground/[0.06] dark:border-white/[0.06]"
                   style={{ animation: 'pulseRing 2.2s 0.4s ease-out infinite' }}
                 />
                 <div
-                  className="absolute -inset-[90px] rounded-full border border-white/[0.03]"
+                  className="absolute -inset-[90px] rounded-full border border-foreground/[0.03] dark:border-white/[0.03]"
                   style={{ animation: 'pulseRing 2.2s 0.8s ease-out infinite' }}
                 />
               </>
             )}
             {activeState === 'thinking' && (
-              <div className="absolute -inset-[24px] rounded-full bg-white/[0.04] blur-[20px]" />
+              <div className="absolute -inset-[24px] rounded-full bg-foreground/[0.04] dark:bg-white/[0.04] blur-[20px]" />
             )}
             {activeState === 'listening' && isRecording && (
               <div
@@ -811,19 +811,19 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
 
           {/* Avatar Frame with Breathing Animation */}
           <div
-            className="relative rounded-full p-[3px] bg-gradient-to-b from-[#2a2a2a] to-[#151515] shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_40px_-12px_rgba(0,0,0,0.9)]"
+            className="relative rounded-full p-[3px] bg-gradient-to-b from-muted to-muted/40 dark:from-[#2a2a2a] dark:to-[#151515] shadow-lg dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_40px_-12px_rgba(0,0,0,0.9)]"
             style={{
               animation: activeState === 'speaking' ? 'avatarBreathe 1.6s ease-in-out infinite' : 'none',
             }}
           >
-            <div className="relative rounded-full p-[4px] bg-[#0e0e0e]">
-              <div className="h-[220px] w-[220px] md:h-[260px] md:w-[260px] rounded-full overflow-hidden bg-[#181818] relative">
+            <div className="relative rounded-full p-[4px] bg-card dark:bg-[#0e0e0e]">
+              <div className="h-[220px] w-[220px] md:h-[260px] md:w-[260px] rounded-full overflow-hidden bg-muted dark:bg-[#181818] relative">
                 <img
                   src={persona.avatar}
                   alt={persona.name}
                   className="h-full w-full object-cover scale-[1.02]"
                 />
-                <div className="absolute inset-0 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.4)]" />
+                <div className="absolute inset-0 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.15)] dark:shadow-[inset_0_0_40px_rgba(0,0,0,0.4)]" />
                 {activeState === 'speaking' && (
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 )}
@@ -831,7 +831,7 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
 
               {/* Corner Status Dot */}
               <div
-                className={`absolute -bottom-1 -right-1 h-8 w-8 rounded-full border-[3px] border-[#121212] grid place-items-center transition-all duration-300 ${
+                className={`absolute -bottom-1 -right-1 h-8 w-8 rounded-full border-[3px] border-card dark:border-[#121212] grid place-items-center transition-all duration-300 ${
                   activeState === 'speaking'
                     ? 'bg-[#ff4a3d] scale-100'
                     : activeState === 'thinking'
